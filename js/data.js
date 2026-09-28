@@ -169,6 +169,7 @@ const IMAGE_ASSETS = {
   iconInjection: "assets/body-garden/icon-injection.png",
   iconCondition: "assets/body-garden/icon-condition.png",
   iconComposition: "assets/body-garden/icon-composition.png",
+  iconRecord: "assets/body-garden/icon-record.png",
   milestoneGoal1: "assets/body-garden/milestone-goal1.png",
   milestoneGoal2: "assets/body-garden/milestone-goal2.png",
   milestoneMaintenance: "assets/body-garden/milestone-maintenance.png",

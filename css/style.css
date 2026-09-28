@@ -226,7 +226,28 @@ nav.bottom-nav button {
   padding: 4px 8px;
 }
 nav.bottom-nav button .nav-icon { font-size: 1.2rem; }
+nav.bottom-nav button .nav-icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
 nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
+
+/* ============ カードタイトルのアイコン（正式アセット） ============ */
+.title-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: -4px;
+  margin-right: 6px;
+}
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  vertical-align: -8px;
+  margin-right: 8px;
+}
 
 [data-screen] { display: block; }
 [hidden] { display: none !important; }

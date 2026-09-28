@@ -167,6 +167,18 @@ const UI = {
       </div>`);
   },
 
+  // カードタイトル用の小さいアイコン。正式アセット未配置時は絵文字にフォールバックする
+  titleIcon(assetKey, fallbackEmoji) {
+    const src = IMAGE_ASSETS[assetKey];
+    const fallback = fallbackEmoji ? `this.outerHTML='${fallbackEmoji}\\u00A0'` : "this.remove()";
+    return `<img class="title-icon" src="${src}" alt="" onerror="${fallback}" />`;
+  },
+
+  brandIcon() {
+    const src = IMAGE_ASSETS.brandSymbol;
+    return `<img class="brand-icon" src="${src}" alt="" onerror="this.remove()" />`;
+  },
+
   // src画像が読み込めない場合（placeholder未配置時）はCSSグラデーションのfallbackを表示する
   imageWithFallback(assetKey, altText, extraClass) {
     const src = IMAGE_ASSETS[assetKey];
@@ -206,7 +218,7 @@ const UI = {
       ${this.imageWithFallback("heroMorning", "", "hero-slot")}
       ${this._goalAchievementBannerHtml()}
       <section class="card hero-card">
-        <p class="eyebrow">BODY GARDEN</p>
+        <p class="eyebrow">${this.brandIcon()}BODY GARDEN</p>
         <p class="current-weight">${fmt(currentWeight, 2)}<span class="unit">kg</span></p>
         <p class="range-line">START ${fmt(profile.startWeight, 2)} → GOAL ${fmt(goalWeight, 2)}</p>
         <div class="stat-row">
@@ -223,7 +235,7 @@ const UI = {
       </section>
 
       <section class="card graph-card">
-        <p class="card-title">体重グラフ</p>
+        <p class="card-title">${this.titleIcon("iconWeight", "🌱")}体重グラフ</p>
         <div class="chart-wrap">
           <canvas id="chart-weight-home" height="180"></canvas>
           <p class="chart-empty-msg" id="chart-weight-home-empty">体重を記録するとグラフが表示されます</p>
@@ -238,7 +250,7 @@ const UI = {
       </section>
 
       <section class="card injection-card">
-        <p class="card-title">💉 NEXT INJECTION</p>
+        <p class="card-title">${this.titleIcon("iconInjection", "💉")}NEXT INJECTION</p>
         ${
           nextInjection
             ? `<p class="injection-value">${nextInjection.scheduledAt}　${nextInjection.dose ?? "—"}mg</p>`
@@ -248,7 +260,7 @@ const UI = {
       </section>
 
       <section class="card condition-card">
-        <p class="card-title">今日の体調</p>
+        <p class="card-title">${this.titleIcon("iconCondition", "")}今日の体調</p>
         <div class="placeholder-box">Phase4で実装予定（なし／軽い／あり＋詳細）</div>
       </section>
     `;

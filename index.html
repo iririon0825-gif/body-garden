@@ -41,8 +41,16 @@
 
 <nav class="bottom-nav">
   <button data-nav-target="home"><span class="nav-icon">🏠</span>HOME</button>
-  <button data-nav-target="records"><span class="nav-icon">📊</span>記録</button>
-  <button data-nav-target="injection"><span class="nav-icon">💉</span>注射</button>
+  <button data-nav-target="records">
+    <img class="nav-icon-img" src="assets/body-garden/icon-record.png" alt=""
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+    <span class="nav-icon" hidden>📊</span>記録
+  </button>
+  <button data-nav-target="injection">
+    <img class="nav-icon-img" src="assets/body-garden/icon-injection.png" alt=""
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+    <span class="nav-icon" hidden>💉</span>注射
+  </button>
   <button data-nav-target="composition"><span class="nav-icon">🌿</span>体組成</button>
   <button data-nav-target="settings"><span class="nav-icon">⚙️</span>設定</button>
 </nav>

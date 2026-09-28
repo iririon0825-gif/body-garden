@@ -19,7 +19,7 @@ const RecordsUI = {
 
     el.innerHTML = `
       <section class="card">
-        <p class="card-title">体重を記録</p>
+        <p class="card-title">${UI.titleIcon("iconWeight", "")}体重を記録</p>
         <form id="weight-form" class="form-grid">
           <label class="form-field">
             <span>日付</span>
@@ -38,7 +38,7 @@ const RecordsUI = {
       </section>
 
       <section class="card">
-        <p class="card-title">記録一覧（直近30件）</p>
+        <p class="card-title">${UI.titleIcon("iconRecord", "")}記録一覧（直近30件）</p>
         ${
           history.length === 0
             ? `<div class="placeholder-box">まだ記録がありません</div>`
