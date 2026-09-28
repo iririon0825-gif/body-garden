@@ -1,0 +1,14 @@
+{
+  "name": "Body Garden",
+  "short_name": "BodyGarden",
+  "description": "体重・体組成・タンパク質・注射・体調を整えて記録するセルフマネジメントアプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f4f1",
+  "theme_color": "#d9a9ac",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

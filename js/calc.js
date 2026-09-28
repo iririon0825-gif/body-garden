@@ -1,0 +1,100 @@
+// Body Garden — 計算ロジック
+// dailyRecords / profile の一次データから毎回算出する値をここに集約する。
+// 「保存値と算出値の不整合」を避けるため、changeKg/changePct/BMI/elapsedDaysは
+// このモジュール経由でのみ取得し、state側には保存しない。
+
+const Calc = {
+  // BMI = 体重kg ÷ (身長m × 身長m)
+  bmi(weightKg, heightCm) {
+    if (weightKg == null || !heightCm) return null;
+    const heightM = heightCm / 100;
+    return weightKg / (heightM * heightM);
+  },
+
+  // 指定BMIに対応する体重(kg)を身長から逆算
+  weightForBmi(bmiValue, heightCm) {
+    if (bmiValue == null || !heightCm) return null;
+    const heightM = heightCm / 100;
+    return bmiValue * heightM * heightM;
+  },
+
+  // goal(type: 'weight'|'bmi', value) を体重kgに正規化
+  goalToWeightKg(goal, heightCm) {
+    if (!goal) return null;
+    if (goal.type === "weight") return goal.value;
+    if (goal.type === "bmi") return this.weightForBmi(goal.value, heightCm);
+    return null;
+  },
+
+  // goal(type: 'weight'|'bmi', value) をBMIに正規化
+  goalToBmi(goal, heightCm) {
+    if (!goal) return null;
+    if (goal.type === "bmi") return goal.value;
+    if (goal.type === "weight") return this.bmi(goal.value, heightCm);
+    return null;
+  },
+
+  changeKg(currentWeight, startWeight) {
+    if (currentWeight == null || startWeight == null) return null;
+    return currentWeight - startWeight;
+  },
+
+  changePct(currentWeight, startWeight) {
+    if (currentWeight == null || !startWeight) return null;
+    return ((currentWeight - startWeight) / startWeight) * 100;
+  },
+
+  remainingToGoalKg(currentWeight, goalWeightKg) {
+    if (currentWeight == null || goalWeightKg == null) return null;
+    return currentWeight - goalWeightKg;
+  },
+
+  elapsedDays(startDateStr, todayDateStr) {
+    if (!startDateStr) return null;
+    const start = new Date(startDateStr + "T00:00:00");
+    const today = new Date((todayDateStr || todayISODate()) + "T00:00:00");
+    const diffMs = today.getTime() - start.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // 開始日を DAY 1 とする
+  },
+
+  // 指定日のタンパク質合計(g)を、その日のproteinEntries（複数件）から算出
+  proteinTotalForDate(date, proteinEntries, proteinProducts, registeredFoods) {
+    let total = 0;
+    for (const entry of (proteinEntries || []).filter((e) => e.date === date)) {
+      if (entry.source === "whey") {
+        const product = proteinProducts.find((p) => p.id === entry.wheyProductId);
+        if (product && entry.scoops) {
+          total += (entry.scoops / product.servingScoops) * product.proteinPerServing;
+        }
+      } else if (entry.source === "food") {
+        const food = registeredFoods.find((f) => f.id === entry.foodId);
+        if (food) total += food.proteinPerUnit * entry.qty;
+      } else if (entry.source === "meal") {
+        total += entry.proteinG || 0;
+      }
+    }
+    return Math.round(total * 10) / 10;
+  },
+
+  // 指定日の体調記録一覧（複数件ありうる。時系列順）
+  conditionEntriesForDate(date, conditionEntries) {
+    return (conditionEntries || [])
+      .filter((e) => e.date === date)
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+  },
+
+  // 最新の体重を持つ記録を取得（weightがnullの記録は無視）
+  latestWeightRecord(dailyRecords) {
+    const withWeight = (dailyRecords || []).filter((r) => r.weight != null);
+    if (withWeight.length === 0) return null;
+    return withWeight.reduce((latest, r) => (r.date > latest.date ? r : latest));
+  },
+};
+
+function todayISODate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}

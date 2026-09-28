@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Body Garden</title>
+<meta name="description" content="体重・体組成・タンパク質・注射・体調を静かに整えて記録するセルフマネジメントアプリ" />
+<meta name="theme-color" content="#d9a9ac" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Body Garden" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<main>
+  <section data-screen="home"><!-- UI.renderHome() が内容を描画 --></section>
+
+  <section data-screen="records" hidden>
+    <div class="card">
+      <p class="card-title">記録</p>
+      <div class="placeholder-box">Phase2〜3で実装予定（体重・体組成入力、日別履歴）</div>
+    </div>
+  </section>
+
+  <section data-screen="injection" hidden>
+    <div class="card">
+      <p class="card-title">注射スケジュール</p>
+      <div class="placeholder-box">Phase4で実装予定（予定日・実施記録・次回提案）</div>
+    </div>
+  </section>
+
+  <section data-screen="composition" hidden>
+    <div class="card">
+      <p class="card-title">体組成</p>
+      <div class="placeholder-box">Phase5で実装予定（詳細項目入力・画像読み取り＋確認画面）</div>
+    </div>
+  </section>
+
+  <section data-screen="settings" hidden>
+    <div class="card">
+      <p class="card-title">設定</p>
+      <div class="placeholder-box">Phase2で実装予定（身長・開始日・開始体重・Goal1/2・BMIガードレール・タンパク質目標）</div>
+    </div>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <button data-nav-target="home"><span class="nav-icon">🏠</span>HOME</button>
+  <button data-nav-target="records"><span class="nav-icon">📊</span>記録</button>
+  <button data-nav-target="injection"><span class="nav-icon">💉</span>注射</button>
+  <button data-nav-target="composition"><span class="nav-icon">🌿</span>体組成</button>
+  <button data-nav-target="settings"><span class="nav-icon">⚙️</span>設定</button>
+</nav>
+
+<script src="js/data.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ocr.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

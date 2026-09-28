@@ -1,0 +1,9 @@
+{
+  "name": "body-garden",
+  "version": "0.1.0",
+  "private": true,
+  "description": "体重・体組成・タンパク質・注射・体調を整えて記録する個人用セルフマネジメントアプリ",
+  "scripts": {
+    "test": "echo \"(no tests yet)\" && exit 0"
+  }
+}

@@ -1,0 +1,227 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap");
+
+:root {
+  --font-display: "Cormorant Garamond", "Zen Kaku Gothic New", serif;
+  --font-body: "Zen Kaku Gothic New", sans-serif;
+
+  /* Body Garden：静かな朝の庭 */
+  --bg-0: #f7f4f1;
+  --bg-1: #fbf8f5;
+  --lavender: #b7a9d6;
+  --lavender-soft: #ded6ee;
+  --dusty-pink: #d9a9ac;
+  --dusty-pink-soft: #f0dadc;
+  --teal: #6fa89c;
+  --teal-soft: #cfe6e0;
+  --morning-light: #f6e9d8;
+
+  --text-hi: #3a3532;
+  --text-lo: #7c756f;
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --card-border: rgba(255, 255, 255, 0.8);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --shadow-glass: 0 8px 30px rgba(150, 130, 160, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-0: #26232a;
+    --bg-1: #2d2a32;
+    --text-hi: #f2ede8;
+    --text-lo: #b8afc4;
+    --card-bg: rgba(60, 55, 66, 0.55);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg-0: #26232a;
+  --bg-1: #2d2a32;
+  --text-hi: #f2ede8;
+  --text-lo: #b8afc4;
+  --card-bg: rgba(60, 55, 66, 0.55);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: linear-gradient(180deg, var(--morning-light) 0%, var(--bg-0) 40%);
+  color: var(--text-hi);
+  min-height: 100vh;
+  padding-bottom: 88px;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 24px;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(14px);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-lo);
+  margin: 0 0 12px;
+  letter-spacing: 0.02em;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-style: italic;
+  letter-spacing: 0.15em;
+  color: var(--lavender);
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.current-weight {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.1;
+  color: var(--text-hi);
+}
+.current-weight .unit {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-left: 4px;
+  color: var(--text-lo);
+}
+
+.range-line {
+  color: var(--text-lo);
+  font-size: 0.85rem;
+  margin: 6px 0 16px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-md);
+  padding: 8px 4px;
+}
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text-lo);
+  margin-bottom: 2px;
+}
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.remaining-line {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: var(--teal);
+  font-weight: 500;
+}
+
+.placeholder-box {
+  border: 1px dashed var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 0.8rem;
+  color: var(--text-lo);
+  background: rgba(255, 255, 255, 0.25);
+  text-align: center;
+}
+
+.protein-value, .injection-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.injection-value.muted { color: var(--text-lo); font-weight: 500; }
+
+.progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--dusty-pink));
+  border-radius: 999px;
+}
+
+/* 画像placeholder：正本未配置時は自動でグラデーションfallback表示 */
+.bg-image-slot {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 16px;
+  height: 140px;
+}
+.bg-image-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.bg-image-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--lavender-soft), var(--dusty-pink-soft) 50%, var(--teal-soft));
+}
+.bg-image-slot.is-fallback img { display: none; }
+.bg-image-slot.is-fallback .bg-image-fallback { display: block; }
+
+nav.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+  backdrop-filter: blur(14px);
+  padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
+}
+nav.bottom-nav button {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: var(--text-lo);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+}
+nav.bottom-nav button .nav-icon { font-size: 1.2rem; }
+nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
+
+[data-screen] { display: block; }
+[hidden] { display: none !important; }
+
+@media (min-width: 600px) {
+  main { max-width: 560px; }
+}
