@@ -231,6 +231,160 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 [data-screen] { display: block; }
 [hidden] { display: none !important; }
 
+/* ============ ボタン共通 ============ */
+.btn-primary, .btn-secondary, .btn-text {
+  font-family: var(--font-body);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--teal), var(--dusty-pink));
+  color: #fff;
+}
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--card-border);
+  color: var(--text-hi);
+}
+.btn-text {
+  background: none;
+  color: var(--text-lo);
+  text-decoration: underline;
+  padding: 6px 4px;
+  font-weight: 500;
+}
+
+/* ============ モーダル ============ */
+.modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(40, 35, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-card {
+  background: var(--bg-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass);
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+}
+.modal-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0 0 12px;
+}
+.modal-body {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-lo);
+  margin: 0 0 20px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ============ Goal達成バナー ============ */
+.achievement-banner {
+  background: linear-gradient(135deg, var(--dusty-pink-soft), var(--lavender-soft));
+}
+.achievement-title { font-weight: 700; font-size: 1.1rem; margin: 0 0 6px; }
+.achievement-sub { font-size: 0.85rem; color: var(--text-lo); margin: 0 0 14px; }
+.achievement-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ============ LOWER LINEバッジ ============ */
+.lower-line-badge {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--text-lo);
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+}
+
+/* ============ 維持準備画面 ============ */
+.maintenance-reason { font-size: 0.8rem; color: var(--text-lo); margin: -6px 0 14px; }
+.maintenance-list { margin: 0 0 18px; padding-left: 1.2em; line-height: 1.9; font-size: 0.9rem; }
+.maintenance-status { color: var(--teal); font-weight: 700; }
+
+/* ============ フォーム共通（設定・記録） ============ */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-lo);
+}
+.form-field input {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-hi);
+}
+.form-field-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+.form-error {
+  color: #b5545a;
+  font-size: 0.85rem;
+  margin: -4px 0 12px;
+}
+.goal-computed {
+  font-size: 0.8rem;
+  color: var(--teal);
+  margin: 0 0 8px;
+}
+
+/* ============ 記録一覧 ============ */
+.record-history-list { list-style: none; margin: 0; padding: 0; }
+.record-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.85rem;
+}
+.record-history-date { color: var(--text-lo); }
+.record-history-weight { font-weight: 700; }
+
+/* ============ グラフ共通 ============ */
+.chart-wrap { position: relative; }
+.chart-empty-msg {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-lo);
+  padding: 30px 0;
+}
+
 @media (min-width: 600px) {
   main { max-width: 560px; }
 }

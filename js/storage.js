@@ -111,6 +111,26 @@ const MIGRATIONS = {
     state.schemaVersion = 2;
     return state;
   },
+
+  // v2: goals.maintenanceMode(boolean)のみで「何がきっかけで維持に入ったか」を
+  //     区別できなかった。
+  // v3: mode('reduction'|'maintenancePrep'|'maintenance') + maintenanceReason
+  //     に置き換え、BMIガードレールの表示制御用にguardrailsを新設。
+  2: (state) => {
+    if (state.goals) {
+      if ("maintenanceMode" in state.goals) {
+        state.goals.mode = state.goals.maintenanceMode ? "maintenance" : "reduction";
+        state.goals.maintenanceReason = state.goals.maintenanceMode ? "bmi21" : null;
+        delete state.goals.maintenanceMode;
+      } else {
+        state.goals.mode = state.goals.mode || "reduction";
+        state.goals.maintenanceReason = state.goals.maintenanceReason || null;
+      }
+    }
+    state.guardrails = state.guardrails || createDefaultGuardrails();
+    state.schemaVersion = 3;
+    return state;
+  },
 };
 
 const Storage = {

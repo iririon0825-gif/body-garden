@@ -89,6 +89,28 @@ const Calc = {
     if (withWeight.length === 0) return null;
     return withWeight.reduce((latest, r) => (r.date > latest.date ? r : latest));
   },
+
+  // Body Gardenは減量方向のGoalのみを扱うため、達成 = 現在体重が目標体重以下
+  isGoalAchieved(currentWeight, goal, heightCm) {
+    if (currentWeight == null || !goal) return false;
+    const goalWeight = this.goalToWeightKg(goal, heightCm);
+    if (goalWeight == null) return false;
+    return currentWeight <= goalWeight;
+  },
+
+  // Goal2はGoal1よりさらに減らす方向（体重換算で小さい）場合のみ有効
+  isGoal2DirectionValid(goal1, goal2, heightCm) {
+    if (!goal1 || !goal2) return true; // goal2未設定なら判定不要
+    const w1 = this.goalToWeightKg(goal1, heightCm);
+    const w2 = this.goalToWeightKg(goal2, heightCm);
+    if (w1 == null || w2 == null) return true;
+    return w2 < w1;
+  },
+
+  isFutureDate(dateStr, todayDateStr) {
+    if (!dateStr) return false;
+    return dateStr > (todayDateStr || todayISODate());
+  },
 };
 
 function todayISODate() {

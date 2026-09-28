@@ -17,12 +17,7 @@
 <main>
   <section data-screen="home"><!-- UI.renderHome() が内容を描画 --></section>
 
-  <section data-screen="records" hidden>
-    <div class="card">
-      <p class="card-title">記録</p>
-      <div class="placeholder-box">Phase2〜3で実装予定（体重・体組成入力、日別履歴）</div>
-    </div>
-  </section>
+  <section data-screen="records" hidden><div id="records-root"></div></section>
 
   <section data-screen="injection" hidden>
     <div class="card">
@@ -38,12 +33,10 @@
     </div>
   </section>
 
-  <section data-screen="settings" hidden>
-    <div class="card">
-      <p class="card-title">設定</p>
-      <div class="placeholder-box">Phase2で実装予定（身長・開始日・開始体重・Goal1/2・BMIガードレール・タンパク質目標）</div>
-    </div>
-  </section>
+  <section data-screen="settings" hidden><div id="settings-root"></div></section>
+
+  <!-- ナビゲーションには出さない。BMI21/BMI20ガードレールから遷移する内部画面 -->
+  <section data-screen="maintenance-prep" hidden><div id="maintenance-prep-root"></div></section>
 </main>
 
 <nav class="bottom-nav">
@@ -54,12 +47,18 @@
   <button data-nav-target="settings"><span class="nav-icon">⚙️</span>設定</button>
 </nav>
 
+<div id="modal-root" class="modal-root" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/calc.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/logic.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/ocr.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/ui-settings.js"></script>
+<script src="js/ui-records.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
