@@ -124,6 +124,9 @@ const UI = {
       SettingsUI.render(this.state); // 入力を編集前の状態に戻す
     } else if (action === "close-generic") {
       this.hideModal();
+    } else if (action === "goto-protein-settings") {
+      this.hideModal();
+      this.switchScreen("settings");
     }
   },
 
@@ -194,7 +197,7 @@ const UI = {
   // ============ HOME ============
   renderHome() {
     const el = document.querySelector('[data-screen="home"]');
-    const { profile, goals, dailyRecords, proteinEntries, proteinProducts, registeredFoods, injections } = this.state;
+    const { profile, goals, dailyRecords, injections } = this.state;
 
     const latest = Calc.latestWeightRecord(dailyRecords);
     const currentWeight = latest ? latest.weight : profile.startWeight;
@@ -207,8 +210,6 @@ const UI = {
     const goalWeight = Calc.goalToWeightKg(activeGoal, profile.heightCm);
     const remaining = Calc.remainingToGoalKg(currentWeight, goalWeight);
     const isBelowLowerLine = currentBmi != null && currentBmi <= profile.bmiLowerLine;
-
-    const proteinTotal = Calc.proteinTotalForDate(todayISODate(), proteinEntries, proteinProducts, registeredFoods);
 
     const nextInjection = injections
       .filter((i) => i.status !== "administered")
@@ -243,10 +244,7 @@ const UI = {
       </section>
 
       <section class="card protein-card">
-        <p class="card-title">TODAY'S PROTEIN</p>
-        <p class="protein-value">${fmt(proteinTotal, 1)} / ${profile.proteinTarget} g</p>
-        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, (proteinTotal / profile.proteinTarget) * 100)}%"></div></div>
-        <div class="placeholder-box">Phase3で実装予定（ホエイ／登録食品／食事の追加操作）</div>
+        ${ProteinHomeUI.cardInnerHtml(this.state)}
       </section>
 
       <section class="card injection-card">
@@ -267,6 +265,7 @@ const UI = {
 
     Charts.renderWeightChart("chart-weight-home", this.state);
     this._bindAchievementBannerButtons();
+    ProteinHomeUI.bindCard(this.state);
   },
 
   _goalAchievementBannerHtml() {

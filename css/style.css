@@ -356,7 +356,8 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
   font-size: 0.8rem;
   color: var(--text-lo);
 }
-.form-field input {
+.form-field input,
+.form-field select {
   font-family: var(--font-body);
   font-size: 1rem;
   padding: 8px 10px;
@@ -396,6 +397,79 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 }
 .record-history-date { color: var(--text-lo); }
 .record-history-weight { font-weight: 700; }
+
+/* ============ Protein: HOMEクイック操作 ============ */
+.protein-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.chip-btn {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text-hi);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.protein-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.protein-entry-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.protein-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.85rem;
+}
+.protein-entry-name { flex: 1; }
+.protein-entry-amount { font-weight: 700; color: var(--teal); }
+
+/* ============ Protein設定: 商品/食品マスター一覧 ============ */
+.subsection-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-hi);
+  margin: 18px 0 8px;
+}
+.master-list { list-style: none; margin: 0; padding: 0; }
+.master-empty { color: var(--text-lo); font-size: 0.85rem; padding: 6px 0; }
+.master-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+.master-row-main { display: flex; flex-direction: column; gap: 2px; }
+.master-row-sub { font-size: 0.75rem; color: var(--text-lo); }
+.master-row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.master-list.is-archived { opacity: 0.6; }
+.default-tag {
+  font-size: 0.7rem;
+  color: var(--teal);
+  border: 1px solid var(--teal);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 4px;
+}
+.inline-form {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-top: 8px;
+}
 
 /* ============ グラフ共通 ============ */
 .chart-wrap { position: relative; }

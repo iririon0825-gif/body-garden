@@ -57,23 +57,17 @@ const Calc = {
     return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // 開始日を DAY 1 とする
   },
 
-  // 指定日のタンパク質合計(g)を、その日のproteinEntries（複数件）から算出
-  proteinTotalForDate(date, proteinEntries, proteinProducts, registeredFoods) {
-    let total = 0;
-    for (const entry of (proteinEntries || []).filter((e) => e.date === date)) {
-      if (entry.source === "whey") {
-        const product = proteinProducts.find((p) => p.id === entry.wheyProductId);
-        if (product && entry.scoops) {
-          total += (entry.scoops / product.servingScoops) * product.proteinPerServing;
-        }
-      } else if (entry.source === "food") {
-        const food = registeredFoods.find((f) => f.id === entry.foodId);
-        if (food) total += food.proteinPerUnit * entry.qty;
-      } else if (entry.source === "meal") {
-        total += entry.proteinG || 0;
-      }
-    }
+  // 指定日のタンパク質合計(g)。各エントリのproteinTotalは記録時点のsnapshotであり、
+  // 商品マスターの現在値を都度参照しない（マスター編集で過去合計が変わらないようにするため）
+  proteinTotalForDate(date, proteinEntries) {
+    const total = (proteinEntries || [])
+      .filter((e) => e.date === date)
+      .reduce((sum, e) => sum + (e.proteinTotal || 0), 0);
     return Math.round(total * 10) / 10;
+  },
+
+  round1(value) {
+    return Math.round(value * 10) / 10;
   },
 
   // 指定日の体調記録一覧（複数件ありうる。時系列順）

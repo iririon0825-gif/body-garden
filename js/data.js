@@ -3,7 +3,7 @@
 // すべて profile / goals / proteinProducts / registeredFoods に保持し、
 // UI側は必ずこれらを参照する。
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 // 入力バリデーションの範囲（単純な入力ミス防止。医療的な適正範囲判定ではない）
 const VALIDATION_RANGES = {
@@ -11,6 +11,12 @@ const VALIDATION_RANGES = {
   weightKg: { min: 20, max: 250 },
   bmi: { min: 10, max: 60 },
   proteinTarget: { min: 0, max: 300 },
+  wheyScoops: { min: 0.1, max: 10 },
+  foodQty: { min: 0.25, max: 20 },
+  mealProteinG: { min: 0.1, max: 200 },
+  productServingScoops: { min: 0.1, max: 20 },
+  productProteinPerServing: { min: 0.1, max: 200 },
+  foodProteinPerUnit: { min: 0.1, max: 200 },
 };
 
 const DEFAULT_PROFILE = {
@@ -54,9 +60,22 @@ function createDefaultGuardrails() {
   };
 }
 
-// id採番付きリストへの追記で共通に使う（goalHistory等）
+// idでの検索共通ヘルパー。DOMのdataset経由で渡るidは常に文字列になるため、
+// 数値id（新規追加分）と文字列id（"whey-default"等のシード分）が混在していても
+// 一致判定できるようString化して比較する。
+function findById(list, id) {
+  return (list || []).find((item) => String(item.id) === String(id));
+}
+
+// id採番付きリストへの追記で共通に使う（goalHistory, proteinEntries, injections,
+// proteinProducts, registeredFoods等）。既存idに"whey-default"のような文字列idが
+// 混ざっていても、数値idだけを見て採番する（文字列が混ざるとMath.maxがNaN化するため）。
 function nextSequentialId(list) {
-  return (list || []).reduce((max, item) => Math.max(max, item.id || 0), 0) + 1;
+  const maxId = (list || []).reduce((max, item) => {
+    const id = typeof item.id === "number" ? item.id : 0;
+    return Math.max(max, id);
+  }, 0);
+  return maxId + 1;
 }
 
 // 体組成の詳細項目。weight 以外はすべて任意（null許容）。
@@ -88,23 +107,29 @@ function createEmptyDailyRecord(date) {
   };
 }
 
-// source: 'whey' | 'food' | 'meal'
-// whey  : { wheyProductId, scoops }
-// food  : { foodId, qty }
-// meal  : { name, proteinG, memo }
-function createProteinEntry(date, source) {
+// proteinEntriesは「記録時点のsnapshot」を保持する。
+// 商品マスター（proteinProducts/registeredFoods）を後から編集・archiveしても、
+// 過去に記録したProtein量・表示名は変化しない（マスターの現在値を都度参照しない）。
+//
+// sourceType: 'whey' | 'food' | 'meal'
+//   whey: sourceId=商品id, quantity=scoops, unitProtein=記録時のproteinPerServing,
+//         servingScoops=記録時のservingScoops
+//   food: sourceId=食品id, quantity=数量(個数等), unitProtein=記録時のproteinPerUnit
+//   meal: sourceId=null, quantity=null, unitProtein=null, memoに自由記述
+// proteinTotal は記録時に計算したProtein量(g)そのもの（都度再計算しない一次データ）。
+function createProteinEntrySnapshot({ date, time, sourceType, sourceId, sourceName, quantity, unitProtein, servingScoops, proteinTotal, memo }) {
   return {
     id: null, // storage.js で採番
     date,
-    time: null, // "HH:MM"（任意）
-    source,
-    wheyProductId: null,
-    scoops: null,
-    foodId: null,
-    qty: null,
-    name: null,
-    proteinG: null,
-    memo: null,
+    time: time || null,
+    sourceType,
+    sourceId: sourceId ?? null,
+    sourceName: sourceName ?? null,
+    quantity: quantity ?? null,
+    unitProtein: unitProtein ?? null,
+    servingScoops: servingScoops ?? null,
+    proteinTotal,
+    memo: memo || null,
     createdAt: new Date().toISOString(),
   };
 }
@@ -134,12 +159,14 @@ function createEmptyInjection() {
   };
 }
 
+// status: 'active' | 'archived'。使用済み商品は物理削除せずarchiveする（過去記録保護のため）。
+// isDefault: ACTIVEな商品が複数ある場合に自動選択される既定商品（常に高々1件のみtrue）。
 const DEFAULT_PROTEIN_PRODUCTS = [
-  { id: "whey-default", name: "ホエイプロテイン", servingScoops: 3, proteinPerServing: 20.8 },
+  { id: "whey-default", name: "ホエイプロテイン", servingScoops: 3, proteinPerServing: 20.8, status: "active", isDefault: true },
 ];
 
 const DEFAULT_REGISTERED_FOODS = [
-  { id: "food-oikos", name: "オイコス（プレーン）", unit: "個", proteinPerUnit: 10 },
+  { id: "food-oikos", name: "オイコス（プレーン）", unit: "個", proteinPerUnit: 10, status: "active" },
 ];
 
 function createDefaultState() {

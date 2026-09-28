@@ -41,10 +41,6 @@ const SettingsUI = {
             <input type="number" step="0.01" id="f-startWeight" value="${d.profile.startWeight}" />
           </label>
           <label class="form-field">
-            <span>タンパク質目標 (g)</span>
-            <input type="number" step="1" id="f-proteinTarget" value="${d.profile.proteinTarget}" />
-          </label>
-          <label class="form-field">
             <span>BMI維持準備アラート値</span>
             <input type="number" step="0.1" id="f-bmiMaintenanceAlert" value="${d.profile.bmiMaintenanceAlert}" />
           </label>
@@ -76,6 +72,7 @@ const SettingsUI = {
 
     this._bindEvents(state);
     this._updateComputedDisplays(state);
+    ProteinSettingsUI.render(state);
   },
 
   _goalFieldsHtml(key, goal, profile) {
@@ -112,7 +109,6 @@ const SettingsUI = {
     };
     bindNumber("f-heightCm", "profile.heightCm");
     bindNumber("f-startWeight", "profile.startWeight");
-    bindNumber("f-proteinTarget", "profile.proteinTarget");
     bindNumber("f-bmiMaintenanceAlert", "profile.bmiMaintenanceAlert");
     bindNumber("f-bmiLowerLine", "profile.bmiLowerLine");
 
@@ -174,9 +170,6 @@ const SettingsUI = {
     if (!validateRange(d.profile.startWeight, VALIDATION_RANGES.weightKg)) {
       return this._fail(state, `開始体重は${VALIDATION_RANGES.weightKg.min}〜${VALIDATION_RANGES.weightKg.max}kgの範囲で入力してください。`);
     }
-    if (!validateRange(d.profile.proteinTarget, VALIDATION_RANGES.proteinTarget)) {
-      return this._fail(state, `タンパク質目標は${VALIDATION_RANGES.proteinTarget.min}〜${VALIDATION_RANGES.proteinTarget.max}gの範囲で入力してください。`);
-    }
     if (!validateRange(d.profile.bmiMaintenanceAlert, VALIDATION_RANGES.bmi) || !validateRange(d.profile.bmiLowerLine, VALIDATION_RANGES.bmi)) {
       return this._fail(state, `BMIガードレール値は${VALIDATION_RANGES.bmi.min}〜${VALIDATION_RANGES.bmi.max}の範囲で入力してください。`);
     }
@@ -217,7 +210,13 @@ const SettingsUI = {
 
   _applyAndSave(state) {
     const d = this._draft;
-    state.profile = { ...d.profile };
+    // proteinTargetはProteinSettingsUIが独立して保存するため、ここでは
+    // このフォームが扱うフィールドだけを反映する（互いの保存で上書きしないため）
+    state.profile.heightCm = d.profile.heightCm;
+    state.profile.startDate = d.profile.startDate;
+    state.profile.startWeight = d.profile.startWeight;
+    state.profile.bmiMaintenanceAlert = d.profile.bmiMaintenanceAlert;
+    state.profile.bmiLowerLine = d.profile.bmiLowerLine;
     state.goals.goal1 = { ...state.goals.goal1, type: d.goal1.type, value: d.goal1.value };
     if (d.goal2Enabled) {
       state.goals.goal2 = state.goals.goal2 || { achievedAt: null, postAchievementChoice: null };

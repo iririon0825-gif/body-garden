@@ -131,6 +131,86 @@ const MIGRATIONS = {
     state.schemaVersion = 3;
     return state;
   },
+
+  // v3: proteinProductsに status/isDefault がなく、proteinEntriesは
+  //     商品/食品IDを都度参照する方式だった（マスター編集で過去合計が変わりうる構造）。
+  // v4: 商品にstatus('active'|'archived')/isDefaultを追加。proteinEntriesは
+  //     記録時点のsnapshot（sourceName/unitProtein/servingScoops/proteinTotal）を
+  //     持つ方式に変更し、マスター変更の影響を受けないようにする。
+  3: (state) => {
+    state.proteinProducts = (state.proteinProducts || []).map((p, i) => ({
+      ...p,
+      status: p.status || "active",
+      isDefault: p.isDefault != null ? p.isDefault : i === 0,
+    }));
+    state.registeredFoods = (state.registeredFoods || []).map((f) => ({
+      ...f,
+      status: f.status || "active",
+    }));
+
+    state.proteinEntries = (state.proteinEntries || []).map((e) => {
+      if (e.sourceType) return e; // 既にv4形式
+      const createdAt = e.createdAt || `${e.date}T00:00:00.000Z`;
+      if (e.source === "whey") {
+        const product = state.proteinProducts.find((p) => p.id === e.wheyProductId);
+        const servingScoops = product ? product.servingScoops : null;
+        const unitProtein = product ? product.proteinPerServing : null;
+        const proteinTotal =
+          product && e.scoops != null ? Math.round((e.scoops / servingScoops) * unitProtein * 10) / 10 : 0;
+        return {
+          id: e.id,
+          date: e.date,
+          time: e.time || null,
+          sourceType: "whey",
+          sourceId: e.wheyProductId,
+          sourceName: product ? product.name : "(削除済みの商品)",
+          quantity: e.scoops,
+          unitProtein,
+          servingScoops,
+          proteinTotal,
+          memo: null,
+          createdAt,
+        };
+      }
+      if (e.source === "food") {
+        const food = state.registeredFoods.find((f) => f.id === e.foodId);
+        const unitProtein = food ? food.proteinPerUnit : null;
+        const proteinTotal = food && e.qty != null ? Math.round(unitProtein * e.qty * 10) / 10 : 0;
+        return {
+          id: e.id,
+          date: e.date,
+          time: e.time || null,
+          sourceType: "food",
+          sourceId: e.foodId,
+          sourceName: food ? food.name : "(削除済みの食品)",
+          quantity: e.qty,
+          unitProtein,
+          servingScoops: null,
+          proteinTotal,
+          memo: null,
+          createdAt,
+        };
+      }
+      // meal
+      return {
+        id: e.id,
+        date: e.date,
+        time: e.time || null,
+        sourceType: "meal",
+        sourceId: null,
+        sourceName: e.name,
+        quantity: null,
+        unitProtein: null,
+        servingScoops: null,
+        proteinTotal: e.proteinG || 0,
+        memo: e.memo || null,
+        createdAt,
+      };
+    });
+
+    state.schemaVersion = 4;
+    return state;
+  },
 };
 
 const Storage = {
@@ -230,11 +310,98 @@ const Storage = {
     return state;
   },
 
+  deleteProteinEntry(state, entryId) {
+    state.proteinEntries = state.proteinEntries.filter((e) => e.id !== entryId);
+    this.save(state);
+    return state;
+  },
+
+  // ホエイ商品のupsert。新規追加時、これが最初のactive商品ならisDefaultにする
+  upsertProteinProduct(state, product) {
+    const isNew = product.id == null;
+    this._upsertById(state.proteinProducts, product);
+    if (isNew && ProteinLogic.activeProducts(state).length === 1) {
+      product.isDefault = true;
+    }
+    this.save(state);
+    return state;
+  },
+
+  // 指定商品をデフォルトにし、他のisDefaultを解除する
+  setDefaultProteinProduct(state, productId) {
+    state.proteinProducts.forEach((p) => {
+      p.isDefault = String(p.id) === String(productId);
+    });
+    this.save(state);
+    return state;
+  },
+
+  archiveProteinProduct(state, productId) {
+    const product = findById(state.proteinProducts, productId);
+    if (!product) return state;
+    product.status = "archived";
+    product.isDefault = false;
+    // デフォルトが不在になった場合、残っているactive商品の先頭を新たなデフォルトにする
+    const stillActive = ProteinLogic.activeProducts(state);
+    if (stillActive.length > 0 && !stillActive.some((p) => p.isDefault)) {
+      stillActive[0].isDefault = true;
+    }
+    this.save(state);
+    return state;
+  },
+
+  restoreProteinProduct(state, productId) {
+    const product = findById(state.proteinProducts, productId);
+    if (!product) return state;
+    product.status = "active";
+    if (ProteinLogic.activeProducts(state).length === 1) product.isDefault = true;
+    this.save(state);
+    return state;
+  },
+
+  // 未使用の商品のみ完全削除できる（呼び出し側でProteinLogic.isProductUsed()を確認すること）
+  deleteProteinProduct(state, productId) {
+    state.proteinProducts = state.proteinProducts.filter((p) => String(p.id) !== String(productId));
+    this.save(state);
+    return state;
+  },
+
+  upsertRegisteredFood(state, food) {
+    this._upsertById(state.registeredFoods, food);
+    this.save(state);
+    return state;
+  },
+
+  archiveRegisteredFood(state, foodId) {
+    const food = findById(state.registeredFoods, foodId);
+    if (!food) return state;
+    food.status = "archived";
+    this.save(state);
+    return state;
+  },
+
+  restoreRegisteredFood(state, foodId) {
+    const food = findById(state.registeredFoods, foodId);
+    if (!food) return state;
+    food.status = "active";
+    this.save(state);
+    return state;
+  },
+
+  // 未使用の食品のみ完全削除できる（呼び出し側でProteinLogic.isFoodUsed()を確認すること）
+  deleteRegisteredFood(state, foodId) {
+    state.registeredFoods = state.registeredFoods.filter((f) => String(f.id) !== String(foodId));
+    this.save(state);
+    return state;
+  },
+
   // id採番付きのupsert共通処理（配列を直接書き換える）
+  // id採番は数値idのみを対象にする。proteinProducts/registeredFoodsの初期シードは
+  // "whey-default"のような文字列idを使うため、Math.maxに文字列が混ざるとNaN化して
+  // 新規追加のidがnullになってしまう不具合があった（nextSequentialIdも同様に修正済み）。
   _upsertById(list, item) {
     if (item.id == null) {
-      const maxId = list.reduce((max, i) => Math.max(max, i.id || 0), 0);
-      item.id = maxId + 1;
+      item.id = nextSequentialId(list);
       list.push(item);
     } else {
       const idx = list.findIndex((i) => i.id === item.id);
