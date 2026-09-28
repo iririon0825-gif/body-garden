@@ -28,7 +28,7 @@
 
   <section data-screen="composition" hidden>
     <div class="card">
-      <p class="card-title">体組成</p>
+      <p class="card-title"><img class="title-icon" src="assets/body-garden/icon-composition.png" alt="" onerror="this.remove()" />体組成</p>
       <div class="placeholder-box">Phase5で実装予定（詳細項目入力・画像読み取り＋確認画面）</div>
     </div>
   </section>
@@ -43,7 +43,11 @@
 </main>
 
 <nav class="bottom-nav">
-  <button data-nav-target="home"><span class="nav-icon">🏠</span>HOME</button>
+  <button data-nav-target="home">
+    <img class="nav-icon-img" src="assets/body-garden/icon-home.png" alt=""
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+    <span class="nav-icon" hidden>🏠</span>HOME
+  </button>
   <button data-nav-target="records">
     <img class="nav-icon-img" src="assets/body-garden/icon-record.png" alt=""
          onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
@@ -54,7 +58,11 @@
          onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
     <span class="nav-icon" hidden>💉</span>注射
   </button>
-  <button data-nav-target="composition"><span class="nav-icon">🌿</span>体組成</button>
+  <button data-nav-target="composition">
+    <img class="nav-icon-img" src="assets/body-garden/icon-composition.png" alt=""
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+    <span class="nav-icon" hidden>🌿</span>体組成
+  </button>
   <button data-nav-target="settings">
     <img class="nav-icon-img" src="assets/body-garden/icon-settings.png" alt=""
          onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />

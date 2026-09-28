@@ -230,7 +230,7 @@ const UI = {
         </div>
         ${
           isBelowLowerLine
-            ? `<p class="lower-line-badge">🪴 LOWER LINE 到達中 — 維持を意識するフェーズです</p>`
+            ? `<p class="lower-line-badge">${this.titleIcon("iconLowerLine", "🪴")}LOWER LINE 到達中 — 維持を意識するフェーズです</p>`
             : `<p class="remaining-line">目標まで ${remaining != null ? fmt(Math.abs(remaining), 1) + "kg" : "—"}</p>`
         }
       </section>
@@ -274,9 +274,10 @@ const UI = {
       const goal = goals[goalKey];
       if (goal && goal.achievedAt && !goal.postAchievementChoice) {
         const hasNextGoal = goalKey === "goal1" && !!goals.goal2;
+        const goalIconKey = goalKey === "goal1" ? "iconGoal1" : "iconGoal2";
         return `
           <section class="card achievement-banner" data-goal-key="${goalKey}">
-            <p class="achievement-title">🌸 ${goalKey === "goal1" ? "Goal 1" : "Goal 2"} 達成</p>
+            <p class="achievement-title">${this.titleIcon(goalIconKey, "🌸")}${goalKey === "goal1" ? "Goal 1" : "Goal 2"} 達成</p>
             <p class="achievement-sub">${goal.achievedAt}に到達しました。次はどうしますか？</p>
             <div class="achievement-actions">
               ${hasNextGoal ? `<button class="btn-primary" data-achievement-action="nextGoal">次の目標へ進む</button>` : ""}
@@ -313,7 +314,7 @@ const UI = {
     el.innerHTML = `
       <div class="card">
         <button class="btn-text" data-maintenance-action="back">← HOMEに戻る</button>
-        <p class="card-title">維持準備</p>
+        <p class="card-title">${this.titleIcon("iconMaintenance", "🌿")}維持準備</p>
         ${reasonLabel ? `<p class="maintenance-reason">きっかけ：${reasonLabel}</p>` : ""}
         <ul class="maintenance-list">
           <li>これ以上減らすことだけを目的にしません</li>
