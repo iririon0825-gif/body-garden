@@ -181,7 +181,16 @@ main {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   display: block;
+}
+
+/* hero-morning.webp は縦長(1122x1402)の人物写真で中央部が主被写体のため、
+   固定高さではなく画像の縦横比に寄せたアスペクト比で表示する */
+.bg-image-slot.hero-slot {
+  height: auto;
+  aspect-ratio: 4 / 5;
+  max-height: 420px;
 }
 .bg-image-fallback {
   display: none;
