@@ -52,13 +52,13 @@ const SettingsUI = {
       </section>
 
       <section class="card">
-        <p class="card-title">${UI.titleIcon("iconGoal1", "")}Goal 1</p>
+        <p class="card-title">${UI.titleIcon("iconGoal1", "", "title-icon-lg")}Goal 1</p>
         ${this._goalFieldsHtml("goal1", d.goal1, d.profile)}
       </section>
 
       <section class="card">
         <label class="form-field-inline">
-          <img class="title-icon" src="${IMAGE_ASSETS.iconGoal2}" alt="" onerror="this.remove()" />
+          <img class="title-icon title-icon-lg" src="${IMAGE_ASSETS.iconGoal2}" alt="" onerror="this.remove()" />
           <input type="checkbox" id="f-goal2-enabled" ${d.goal2Enabled ? "checked" : ""} />
           <span>Goal 2 を設定する（任意）</span>
         </label>

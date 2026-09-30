@@ -170,11 +170,13 @@ const UI = {
       </div>`);
   },
 
-  // カードタイトル用の小さいアイコン。正式アセット未配置時は絵文字にフォールバックする
-  titleIcon(assetKey, fallbackEmoji) {
+  // カードタイトル用のアイコン。sizeClassに"title-icon-lg"を渡すと主要状態表示サイズになる。
+  // 正式アセット未配置時は絵文字にフォールバックする
+  titleIcon(assetKey, fallbackEmoji, sizeClass) {
     const src = IMAGE_ASSETS[assetKey];
+    const cls = sizeClass ? ` ${sizeClass}` : "";
     const fallback = fallbackEmoji ? `this.outerHTML='${fallbackEmoji}\\u00A0'` : "this.remove()";
-    return `<img class="title-icon" src="${src}" alt="" onerror="${fallback}" />`;
+    return `<img class="title-icon${cls}" src="${src}" alt="" onerror="${fallback}" />`;
   },
 
   brandIcon() {
@@ -216,24 +218,28 @@ const UI = {
       .sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1))[0];
 
     el.innerHTML = `
-      ${this.imageWithFallback("heroMorning", "", "hero-slot")}
+      <div class="hero-section">
+        ${this.imageWithFallback("heroMorning", "", "hero-slot")}
+        <div class="hero-title-overlay">${this.brandIcon()}<span class="hero-title-text">BODY GARDEN</span></div>
+        <section class="card hero-stat-card">
+          <p class="hero-day-line">開始から<strong>${elapsedDays ?? "—"}</strong>日目</p>
+          <p class="current-weight">${fmt(currentWeight, 2)}<span class="unit">kg</span></p>
+          <p class="range-line">START ${fmt(profile.startWeight, 2)} → GOAL ${fmt(goalWeight, 2)}</p>
+          <div class="stat-row">
+            <div class="stat"><span class="stat-label">DAY</span><span class="stat-value">${elapsedDays ?? "—"}</span></div>
+            <div class="stat"><span class="stat-label">BMI</span><span class="stat-value">${fmt(currentBmi, 1)}</span></div>
+            <div class="stat"><span class="stat-label">変化</span><span class="stat-value">${signedFmt(changeKg, 2)}kg</span></div>
+            <div class="stat"><span class="stat-label">変化率</span><span class="stat-value">${signedFmt(changePct, 1)}%</span></div>
+          </div>
+          ${
+            isBelowLowerLine
+              ? `<p class="lower-line-badge">${this.titleIcon("iconLowerLine", "🪴", "title-icon-lg")}LOWER LINE 到達中 — 維持を意識するフェーズです</p>`
+              : `<p class="remaining-line">目標まで ${remaining != null ? fmt(Math.abs(remaining), 1) + "kg" : "—"}</p>`
+          }
+        </section>
+      </div>
+
       ${this._goalAchievementBannerHtml()}
-      <section class="card hero-card">
-        <p class="eyebrow">${this.brandIcon()}BODY GARDEN</p>
-        <p class="current-weight">${fmt(currentWeight, 2)}<span class="unit">kg</span></p>
-        <p class="range-line">START ${fmt(profile.startWeight, 2)} → GOAL ${fmt(goalWeight, 2)}</p>
-        <div class="stat-row">
-          <div class="stat"><span class="stat-label">DAY</span><span class="stat-value">${elapsedDays ?? "—"}</span></div>
-          <div class="stat"><span class="stat-label">BMI</span><span class="stat-value">${fmt(currentBmi, 1)}</span></div>
-          <div class="stat"><span class="stat-label">変化</span><span class="stat-value">${signedFmt(changeKg, 2)}kg</span></div>
-          <div class="stat"><span class="stat-label">変化率</span><span class="stat-value">${signedFmt(changePct, 1)}%</span></div>
-        </div>
-        ${
-          isBelowLowerLine
-            ? `<p class="lower-line-badge">${this.titleIcon("iconLowerLine", "🪴")}LOWER LINE 到達中 — 維持を意識するフェーズです</p>`
-            : `<p class="remaining-line">目標まで ${remaining != null ? fmt(Math.abs(remaining), 1) + "kg" : "—"}</p>`
-        }
-      </section>
 
       <section class="card graph-card">
         <p class="card-title">${this.titleIcon("iconWeight", "🌱")}体重グラフ</p>
@@ -243,29 +249,53 @@ const UI = {
         </div>
       </section>
 
-      <section class="card protein-card">
-        ${ProteinHomeUI.cardInnerHtml(this.state)}
-      </section>
+      <div class="home-grid-2col">
+        <section class="card injection-card">
+          <p class="card-title">${this.titleIcon("iconInjection", "💉")}NEXT INJECTION</p>
+          ${
+            nextInjection
+              ? `<p class="injection-value">${nextInjection.scheduledAt}　${nextInjection.dose ?? "—"}mg</p>`
+              : `<p class="injection-value muted">未設定</p>`
+          }
+          <div class="placeholder-box">Phase4で実装予定（投与記録・次回提案）</div>
+        </section>
 
-      <section class="card injection-card">
-        <p class="card-title">${this.titleIcon("iconInjection", "💉")}NEXT INJECTION</p>
-        ${
-          nextInjection
-            ? `<p class="injection-value">${nextInjection.scheduledAt}　${nextInjection.dose ?? "—"}mg</p>`
-            : `<p class="injection-value muted">未設定</p>`
-        }
-        <div class="placeholder-box">Phase4で実装予定（投与記録・次回提案）</div>
-      </section>
+        <section class="card protein-card">
+          ${ProteinHomeUI.cardInnerHtml(this.state)}
+        </section>
+      </div>
 
-      <section class="card condition-card">
-        <p class="card-title">${this.titleIcon("iconCondition", "")}今日の体調</p>
-        <div class="placeholder-box">Phase4で実装予定（なし／軽い／あり＋詳細）</div>
-      </section>
+      <div class="home-grid-2col">
+        <section class="card condition-card">
+          <p class="card-title">${this.titleIcon("iconCondition", "")}今日の体調</p>
+          <div class="placeholder-box">Phase4で実装予定（なし／軽い／あり＋詳細）</div>
+        </section>
+
+        ${this._goalStatusCardHtml()}
+      </div>
     `;
 
     Charts.renderWeightChart("chart-weight-home", this.state);
     this._bindAchievementBannerButtons();
     ProteinHomeUI.bindCard(this.state);
+  },
+
+  _goalStatusCardHtml() {
+    const { profile, goals, dailyRecords } = this.state;
+    const modeLabel = { reduction: "減量中", maintenancePrep: "維持準備中", maintenance: "維持モード" }[goals.mode] || "";
+    const goalKey = goals.activeGoal === 2 && goals.goal2 ? "goal2" : "goal1";
+    const activeGoal = goals[goalKey];
+    const goalWeight = Calc.goalToWeightKg(activeGoal, profile.heightCm);
+    const latest = Calc.latestWeightRecord(dailyRecords);
+    const currentWeight = latest ? latest.weight : profile.startWeight;
+    const remaining = Calc.remainingToGoalKg(currentWeight, goalWeight);
+    const goalIconKey = goalKey === "goal2" ? "iconGoal2" : "iconGoal1";
+    return `
+      <section class="card goal-status-card">
+        <p class="card-title">${this.titleIcon(goalIconKey, "🚩", "title-icon-lg")}${goalKey === "goal2" ? "Goal 2" : "Goal 1"} / モード</p>
+        <p class="goal-status-mode">${modeLabel}</p>
+        <p class="goal-status-detail">目標 ${fmt(goalWeight, 2)}kg ／ 残り ${remaining != null ? fmt(Math.abs(remaining), 1) + "kg" : "—"}</p>
+      </section>`;
   },
 
   _goalAchievementBannerHtml() {
@@ -277,7 +307,7 @@ const UI = {
         const goalIconKey = goalKey === "goal1" ? "iconGoal1" : "iconGoal2";
         return `
           <section class="card achievement-banner" data-goal-key="${goalKey}">
-            <p class="achievement-title">${this.titleIcon(goalIconKey, "🌸")}${goalKey === "goal1" ? "Goal 1" : "Goal 2"} 達成</p>
+            <p class="achievement-title">${this.titleIcon(goalIconKey, "🌸", "title-icon-lg")}${goalKey === "goal1" ? "Goal 1" : "Goal 2"} 達成</p>
             <p class="achievement-sub">${goal.achievedAt}に到達しました。次はどうしますか？</p>
             <div class="achievement-actions">
               ${hasNextGoal ? `<button class="btn-primary" data-achievement-action="nextGoal">次の目標へ進む</button>` : ""}
@@ -314,7 +344,7 @@ const UI = {
     el.innerHTML = `
       <div class="card">
         <button class="btn-text" data-maintenance-action="back">← HOMEに戻る</button>
-        <p class="card-title">${this.titleIcon("iconMaintenance", "🌿")}維持準備</p>
+        <p class="card-title">${this.titleIcon("iconMaintenance", "🌿", "title-icon-lg")}維持準備</p>
         ${reasonLabel ? `<p class="maintenance-reason">きっかけ：${reasonLabel}</p>` : ""}
         <ul class="maintenance-list">
           <li>これ以上減らすことだけを目的にしません</li>

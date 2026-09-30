@@ -17,11 +17,12 @@
 
   --text-hi: #3a3532;
   --text-lo: #7c756f;
-  --card-bg: rgba(255, 255, 255, 0.6);
-  --card-border: rgba(255, 255, 255, 0.8);
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --shadow-glass: 0 8px 30px rgba(150, 130, 160, 0.15);
+  --card-bg: rgba(255, 255, 255, 0.5);
+  --card-border: rgba(255, 255, 255, 0.6);
+  --card-wash: linear-gradient(135deg, rgba(183, 169, 214, 0.12), rgba(217, 169, 172, 0.10) 45%, rgba(207, 230, 224, 0.12));
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --shadow-glass: 0 6px 20px rgba(150, 130, 160, 0.10);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +33,7 @@
     --text-lo: #b8afc4;
     --card-bg: rgba(60, 55, 66, 0.55);
     --card-border: rgba(255, 255, 255, 0.08);
+    --card-wash: linear-gradient(135deg, rgba(183, 169, 214, 0.16), rgba(217, 169, 172, 0.12) 45%, rgba(207, 230, 224, 0.14));
     --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.35);
   }
 }
@@ -42,6 +44,7 @@
   --text-lo: #b8afc4;
   --card-bg: rgba(60, 55, 66, 0.55);
   --card-border: rgba(255, 255, 255, 0.08);
+  --card-wash: linear-gradient(135deg, rgba(183, 169, 214, 0.16), rgba(217, 169, 172, 0.12) 45%, rgba(207, 230, 224, 0.14));
   --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
@@ -63,30 +66,23 @@ main {
 }
 
 .card {
-  background: var(--card-bg);
+  background: var(--card-wash), var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-glass);
   backdrop-filter: blur(14px);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
 }
 
 .card-title {
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--text-lo);
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   letter-spacing: 0.02em;
-}
-
-.eyebrow {
-  font-family: var(--font-display);
-  font-style: italic;
-  letter-spacing: 0.15em;
-  color: var(--lavender);
-  margin: 0 0 4px;
-  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
 }
 
 .current-weight {
@@ -201,6 +197,52 @@ main {
 .bg-image-slot.is-fallback img { display: none; }
 .bg-image-slot.is-fallback .bg-image-fallback { display: block; }
 
+/* ============ Hero一体化（写真＋現在値カードを一つのセクションに） ============ */
+.hero-section {
+  position: relative;
+  margin-bottom: 12px;
+}
+.hero-section .hero-slot {
+  margin-bottom: 0;
+}
+.hero-title-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-title-overlay .brand-icon {
+  filter: drop-shadow(0 2px 6px rgba(40, 30, 40, 0.35));
+}
+.hero-title-text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  color: #fffdfb;
+  text-shadow: 0 2px 10px rgba(50, 35, 45, 0.55);
+}
+.hero-stat-card {
+  position: relative;
+  z-index: 3;
+  margin: -52px 14px 0;
+  /* 写真に重なるため、低い不透明度だと下の写真の色むらがにじんで見える。
+     ほぼ不透明にして写真の上でもカードとして明瞭に浮き上がらせる */
+  background: var(--card-wash), rgba(255, 253, 250, 0.96);
+}
+.hero-day-line {
+  font-size: 0.8rem;
+  color: var(--text-lo);
+  margin: 0 0 4px;
+}
+.hero-day-line strong {
+  color: var(--text-hi);
+  font-weight: 700;
+}
+
 nav.bottom-nav {
   position: fixed;
   bottom: 0;
@@ -227,26 +269,31 @@ nav.bottom-nav button {
 }
 nav.bottom-nav button .nav-icon { font-size: 1.2rem; }
 nav.bottom-nav button .nav-icon-img {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
 }
 nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 
 /* ============ カードタイトルのアイコン（正式アセット） ============ */
+/* カード見出し：32〜40px、主要状態表示(Goal/LOWER LINE/maintenance等)：36〜44px */
 .title-icon {
-  width: 20px;
-  height: 20px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
-  vertical-align: -4px;
-  margin-right: 6px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+.title-icon.title-icon-lg {
+  width: 42px;
+  height: 42px;
+  margin-right: 10px;
 }
 .brand-icon {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
-  vertical-align: -8px;
-  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 [data-screen] { display: block; }
@@ -323,7 +370,7 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 .achievement-banner {
   background: linear-gradient(135deg, var(--dusty-pink-soft), var(--lavender-soft));
 }
-.achievement-title { font-weight: 700; font-size: 1.1rem; margin: 0 0 6px; }
+.achievement-title { font-weight: 700; font-size: 1.1rem; margin: 0 0 6px; display: flex; align-items: center; }
 .achievement-sub { font-size: 0.85rem; color: var(--text-lo); margin: 0 0 14px; }
 .achievement-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -335,6 +382,8 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
   background: rgba(255, 255, 255, 0.35);
   border-radius: var(--radius-md);
   padding: 8px 12px;
+  display: flex;
+  align-items: center;
 }
 
 /* ============ 維持準備画面 ============ */
@@ -471,6 +520,31 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
   margin-top: 8px;
 }
 
+/* ============ HOME 2カラムレイアウト ============ */
+.home-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.home-grid-2col > .card {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+/* ============ Goal / モードカード ============ */
+.goal-status-mode {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin: 0 0 4px;
+}
+.goal-status-detail {
+  font-size: 0.85rem;
+  color: var(--text-lo);
+  margin: 0;
+}
+
 /* ============ グラフ共通 ============ */
 .chart-wrap { position: relative; }
 .chart-empty-msg {
@@ -482,4 +556,11 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 
 @media (min-width: 600px) {
   main { max-width: 560px; }
+}
+
+@media (min-width: 700px) {
+  main { max-width: 780px; }
+  .home-grid-2col {
+    grid-template-columns: 1fr 1fr;
+  }
 }
