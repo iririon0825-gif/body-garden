@@ -736,6 +736,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .backup-compare thead th { font-size: 0.75rem; color: var(--text-lo); font-weight: 700; }
 .backup-confirm-actions { justify-content: flex-end; }
 .backup-confirm-actions .btn-text { margin-right: auto; }
+.readonly-banner.is-info { background: #4f5f8a; }
 .newer-schema-screen { max-width: 520px; margin: 0 auto; padding: 32px 16px; }
 .readonly-banner {
   position: sticky;
@@ -748,6 +749,76 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
   color: #fff;
   background: #7a4f6b;
 }
+
+/* ============ 注射管理（注射タブ・HOME注射カード） ============ */
+.inj-note { font-size: 0.8rem; line-height: 1.7; color: var(--text-lo); margin: 0; }
+.inj-big { font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; font-variant-numeric: tabular-nums; }
+.inj-big.muted { color: var(--text-lo); font-weight: 500; }
+.inj-sub { font-size: 0.8rem; line-height: 1.6; color: var(--text-lo); margin: 0 0 8px; }
+.inj-hint { font-size: 0.72rem; line-height: 1.5; color: var(--text-lo); }
+.inj-chip {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.5;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(124, 108, 200, 0.14);
+  color: #4a3d8f;
+  vertical-align: middle;
+}
+.inj-chip-warn { background: rgba(190, 80, 110, 0.14); color: #a1405f; }
+.inj-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.inj-actions-grid { margin-bottom: 8px; }
+.inj-notice {
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  margin: 0 0 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--card-border);
+  color: var(--text-hi);
+}
+.inj-notice-warn { background: rgba(250, 231, 236, 0.85); border-color: rgba(190, 80, 110, 0.28); }
+.inj-warn { font-size: 0.82rem; line-height: 1.6; color: #a1405f; margin: 0 0 8px; }
+.inj-notes { margin: 0 0 12px; }
+.inj-list { list-style: none; margin: 0; padding: 0; }
+.inj-row { padding: 8px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.inj-row-main { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.inj-row-sub { font-size: 0.76rem; line-height: 1.5; color: var(--text-lo); margin-top: 2px; }
+.inj-row-actions { display: flex; gap: 6px; margin-top: 2px; }
+.inj-row-skipped .inj-row-label { color: var(--text-lo); }
+.inj-facts { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0 0 10px; }
+.inj-facts th { text-align: left; font-weight: 500; color: var(--text-lo); padding: 4px 8px 4px 0; white-space: nowrap; vertical-align: top; }
+.inj-facts td { padding: 4px 0; font-variant-numeric: tabular-nums; }
+.inj-cands { display: flex; flex-direction: column; gap: 8px; margin: 0 0 10px; }
+.inj-cand {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.inj-cand-off { opacity: 0.62; }
+.inj-olderlist { list-style: none; margin: 0 0 10px; padding: 0; }
+.inj-missed-actions { margin-bottom: 6px; }
+.inj-details summary { cursor: pointer; font-size: 0.8rem; color: var(--text-lo); margin-top: 8px; }
+/* HOMEの注射カード: 右の花瓶を避けて、短い行で表示する */
+.inj-home { cursor: pointer; margin-right: 38px; }
+.inj-home-date { font-size: 1.05rem; font-weight: 700; line-height: 1.3; margin: 0 0 2px; font-variant-numeric: tabular-nums; }
+.inj-home-date.muted { font-weight: 500; color: var(--text-lo); }
+/* 2行目（時刻・状態チップ）は、幅が足りないときはチップを次の行へ折り返す（はみ出させない） */
+.inj-home-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 0.78rem; line-height: 1.5; margin: 0 0 4px; color: var(--text-lo); }
+.inj-home-sub .inj-chip { white-space: nowrap; }
+.inj-home-date { overflow-wrap: anywhere; }
+.inj-home-meta { font-size: 0.74rem; line-height: 1.45; margin: 1px 0 0; color: var(--text-lo); font-variant-numeric: tabular-nums; }
+.inj-home-note { font-size: 0.72rem; line-height: 1.4; margin: 2px 0 0; color: var(--text-lo); }
+.inj-home-warn { font-size: 0.72rem; line-height: 1.4; margin: 2px 0 0; color: #a1405f; }
 
 /* ============ 記録一覧 ============ */
 .record-history-list { list-style: none; margin: 0; padding: 0; }
@@ -1199,7 +1270,8 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
     bottom: -8px;
     opacity: 1;
   }
-  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .injection-card .placeholder-box {
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .injection-card .placeholder-box,
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .injection-card .inj-home {
     margin-right: 38px;
   }
 
@@ -1308,6 +1380,13 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
   .home-lower .goal-status-mode { color: var(--hp-text); }
   .home-lower .injection-value.muted,
   .home-lower .goal-status-detail { color: var(--hp-text-mute); }
+  /* 注意文（2行に折り返す）が、右の花瓶に重ならないよう、375pxでは文字の幅を狭める */
+  .home-lower .inj-home-warn { margin-right: 28px; }
+  .home-lower .inj-home-date { color: var(--hp-text); }
+  .home-lower .inj-home-date.muted,
+  .home-lower .inj-home-sub,
+  .home-lower .inj-home-meta,
+  .home-lower .inj-home-note { color: var(--hp-text-mute); }
   .home-lower .placeholder-box {
     background: var(--hp-inset);
     border-color: rgba(255, 255, 255, 0.5);
@@ -1570,7 +1649,14 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
     bottom: -6px;
     opacity: 1;
   }
-  [data-screen="home"][data-bg="magic"] .injection-card .placeholder-box { margin-right: clamp(80px, 12cqw, 130px); }
+  [data-screen="home"][data-bg="magic"] .injection-card .placeholder-box,
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home { margin-right: clamp(80px, 12cqw, 130px); }
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home-date { color: #2e2468; }
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home-date.muted,
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home-sub,
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home-meta,
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home-note { color: #6b6290; }
+  [data-screen="home"][data-bg="magic"] .injection-card .inj-home-warn { color: #a1405f; }
 
   /* 体調カードの花飾り：既存の花束素材を右下の角に（紫の花穂は素材未制作のため暫定） */
   [data-screen="home"][data-bg="magic"] .condition-card { position: relative; overflow: hidden; }

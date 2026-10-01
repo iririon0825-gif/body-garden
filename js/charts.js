@@ -43,6 +43,11 @@ const Charts = {
       showMessage("体重を記録するとグラフが表示されます", false);
       return;
     }
+    // 外部ライブラリ（Chart.js）を取得できない状態（オフライン等）でも、HOME全体の描画を止めない
+    if (typeof Chart === "undefined") {
+      showMessage("グラフを表示できません（通信できる状態で、もう一度開いてください）", false);
+      return;
+    }
 
     // --- 表示期間の日付列（日単位の連続した横軸。記録のない日は線を補間するだけで空ける） ---
     const today = todayISODate();

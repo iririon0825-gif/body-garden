@@ -211,6 +211,39 @@ const MIGRATIONS = {
     state.schemaVersion = 4;
     return state;
   },
+
+  // v4: injections は {scheduledAt, administeredAt, dose, status, comment} のみ。定例スケジュールの概念なし。
+  // v5: 注射管理（Phase4）。injections に kind / regularDate / 時刻 / 見送り理由などを追加し、
+  //     定例スケジュール injectionSchedule を新設する。既存の記録は値を変えずに引き継ぐ（冪等）。
+  //     定例曜日は既存データから推測しない（画面で本人が設定する）。
+  4: (state) => {
+    const defaults = createEmptyInjection();
+    const list = Array.isArray(state.injections) ? state.injections : [];
+    const migrated = list.map((i) => {
+      const rec = { ...defaults, ...i };
+      // status は元のデータの値で判定する（既定値の "scheduled" が先に入るため rec.status は使わない）
+      if (!["scheduled", "administered", "skipped"].includes(i.status)) {
+        rec.status = rec.administeredAt ? "administered" : "scheduled";
+      }
+      if (rec.kind === "manual" && i.kind === undefined) rec.kind = "legacy";
+      if (rec.scheduledAt === undefined) rec.scheduledAt = null;
+      if (rec.administeredAt === undefined) rec.administeredAt = null;
+      if (rec.dose === undefined) rec.dose = null;
+      if (typeof rec.comment !== "string") rec.comment = "";
+      return rec;
+    });
+    // idが無い記録には連番を振る（数値idだけを数える）
+    for (const rec of migrated) {
+      if (rec.id === null || rec.id === undefined) rec.id = nextSequentialId(migrated);
+    }
+    state.injections = migrated;
+    state.injectionSchedule = state.injectionSchedule || createDefaultInjectionSchedule();
+    // 在庫（残本数）の初期化。既存の投与済みの記録は削除せず、本人の確認が済むまで使用本数に数えない
+    applyStockBaseline(state);
+    state.ui = state.ui || { lastScreen: "home" };
+    state.schemaVersion = 5;
+    return state;
+  },
 };
 
 const Storage = {
@@ -303,7 +336,14 @@ const Storage = {
       return state;
     }
 
-    return state; // 同じ版のデータは変換不要なので、読み込みだけでは書き込まない
+    // 同じ版のデータは変換不要なので、読み込みだけでは書き込まない。
+    // ただし在庫の設定が無い（開発中のv5データ）ときだけ、初期値を入れて保存する（既存の記録は変更しない）
+    if (!state.injectionStock || !state.injectionSchedule) {
+      if (!state.injectionSchedule) state.injectionSchedule = createDefaultInjectionSchedule();
+      applyStockBaseline(state);
+      this.save(state);
+    }
+    return state;
   },
 
   // 初回起動時・復旧時の共通処理。startDateを今日にセットして保存する
@@ -378,8 +418,23 @@ const Storage = {
 
   upsertInjection(state, injection) {
     this._upsertById(state.injections, injection);
-    state.injections.sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1));
+    this.sortInjections(state);
     this.save(state);
+    return state;
+  },
+
+  // 実効日（実施日、なければ予定日、なければ定例日）→ 時刻 → id の順。null（予定なしの投与など）でも順序が壊れない
+  sortInjections(state) {
+    const key = (i) => [i.administeredAt || i.scheduledAt || i.regularDate || "", i.administeredTime || i.scheduledTime || "", typeof i.id === "number" ? i.id : 0];
+    state.injections.sort((a, b) => {
+      const ka = key(a);
+      const kb = key(b);
+      for (let n = 0; n < 3; n++) {
+        if (ka[n] < kb[n]) return -1;
+        if (ka[n] > kb[n]) return 1;
+      }
+      return 0;
+    });
     return state;
   },
 

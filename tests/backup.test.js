@@ -32,7 +32,7 @@ test("ファイル名は日時入り、エンベロープに件数が入る", ()
   const e = envelopeOf(env, sampleState(env));
   assert.equal(e.app, "body-garden");
   assert.equal(e.kind, "full-backup");
-  assert.equal(e.schemaVersion, 4);
+  assert.equal(e.schemaVersion, 5);
   assert.deepEqual(e.counts, { dailyRecords: 3, proteinEntries: 2, conditionEntries: 1, injections: 1, proteinProducts: 1, registeredFoods: 1 });
 });
 
@@ -89,11 +89,11 @@ test("拒否: schemaVersion が文字列／小数／0／食い違い", () => {
   assertRejected(env, JSON.stringify(e), "INVALID_SCHEMA_VERSION");
 });
 
-test("拒否: 現在より新しい schemaVersion（v5）", () => {
+test("拒否: 現在より新しい schemaVersion（v6）", () => {
   const env = loadEnv();
   const e = envelopeOf(env, sampleState(env));
-  e.state.schemaVersion = 5;
-  e.schemaVersion = 5;
+  e.state.schemaVersion = 6;
+  e.schemaVersion = 6;
   const r = assertRejected(env, JSON.stringify(e), "NEWER_SCHEMA");
   assert.match(r.message, /更新/);
 });
@@ -210,7 +210,7 @@ test("古い版(v3)のバックアップは変換して取り込める", () => {
   const e = { app: "body-garden", kind: "full-backup", formatVersion: 1, schemaVersion: 3, exportedAt: "2026-09-01T00:00:00Z", counts: env.Backup.counts(v3), state: v3 };
   const r = env.Backup.parse(JSON.stringify(e), null);
   assert.equal(r.ok, true, JSON.stringify(r));
-  assert.equal(r.state.schemaVersion, 4);
+  assert.equal(r.state.schemaVersion, 5);
   assert.equal(r.summary.migrated, true);
   assert.equal(r.state.proteinEntries[0].sourceType, "whey");
   assert.equal(r.state.proteinProducts[0].status, "active");
@@ -351,7 +351,7 @@ test("読み込み: 新しい版(v99)のデータは読み取り専用で起動�
 test("保存: 保存済みが新しい版なら（別タブ等が書いた場合）上書きしない", () => {
   const env = loadEnv();
   const state = sampleState(env);
-  const newer = JSON.stringify({ schemaVersion: 5, data: "新" });
+  const newer = JSON.stringify({ schemaVersion: 6, data: "新" });
   env.ls.setItem(env.STORAGE_KEY, newer);
   assert.equal(env.Storage.save(state), false);
   assert.equal(env.ls.getItem(env.STORAGE_KEY), newer);
@@ -367,7 +367,7 @@ test("保存: メモ欄に schemaVersion という文字列があっても誤判
   assert.equal(env.Storage.readOnly, false);
 });
 
-test("読み込み: 同じ版(v4)は読み込むだけで書き込まない", () => {
+test("読み込み: 同じ版(v5)は読み込むだけで書き込まない", () => {
   const env = loadEnv();
   env.ls.setItem(env.STORAGE_KEY, JSON.stringify(sampleState(env)));
   env.ls.setCalls.length = 0;
@@ -392,9 +392,9 @@ test("読み込み: 古い版(v3)は移行前に退避してから移行・保�
   const raw = v3Raw();
   env.ls.setItem(env.STORAGE_KEY, raw);
   const s = env.Storage.load();
-  assert.equal(s.schemaVersion, 4);
+  assert.equal(s.schemaVersion, 5);
   assert.equal(env.ls.getItem(`${env.STORAGE_KEY}.preMigration.v3`), raw, "元のv3を退避");
-  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 4);
+  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 5);
   assert.equal(env.Storage.readOnly, false);
 });
 
@@ -412,7 +412,7 @@ test("読み込み: 移行前の退避に失敗したら、移行結果を保存
   env.ls.setItem(env.STORAGE_KEY, raw);
   env.ls.failSetKeys.add(`${env.STORAGE_KEY}.preMigration.v3`);
   const s = env.Storage.load();
-  assert.equal(s.schemaVersion, 4, "メモリ上では使える");
+  assert.equal(s.schemaVersion, 5, "メモリ上では使える");
   assert.equal(env.Storage.readOnly, true);
   assert.equal(env.Storage.readOnlyReason, "preMigrationBackupFailed");
   assert.equal(env.ls.getItem(env.STORAGE_KEY), raw, "保存データは変わらない");
@@ -423,7 +423,7 @@ test("読み込み: 壊れたJSON／null は退避して初期状態へ", () => 
     const env = loadEnv();
     env.ls.setItem(env.STORAGE_KEY, bad);
     const s = env.Storage.load();
-    assert.equal(s.schemaVersion, 4);
+    assert.equal(s.schemaVersion, 5);
     const corrupted = [...env.ls.map.keys()].filter((k) => k.startsWith(`${env.STORAGE_KEY}.corrupted.`));
     assert.equal(corrupted.length, 1, `退避が作られる: ${bad}`);
     assert.equal(env.ls.getItem(corrupted[0]), bad);
@@ -433,6 +433,6 @@ test("読み込み: 壊れたJSON／null は退避して初期状態へ", () => 
 test("読み込み: 保存データが無い初回起動は初期状態を作る", () => {
   const env = loadEnv();
   const s = env.Storage.load();
-  assert.equal(s.schemaVersion, 4);
+  assert.equal(s.schemaVersion, 5);
   assert.ok(s.profile.startDate);
 });

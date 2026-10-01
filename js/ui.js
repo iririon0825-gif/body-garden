@@ -56,8 +56,9 @@ const UI = {
     if (screenName === "home") this.renderHome();
     if (screenName === "settings") SettingsUI.render(this.state);
     if (screenName === "records") RecordsUI.render(this.state);
+    if (screenName === "injection" && typeof InjectionUI !== "undefined") InjectionUI.render(this.state);
     if (screenName === "maintenance-prep") this.renderMaintenancePrep();
-    // injection / composition は Phase4〜5で実装
+    // composition は Phase5で実装
   },
 
   // ============ モーダル基盤 ============
@@ -231,7 +232,7 @@ const UI = {
   // ============ HOME ============
   renderHome() {
     const el = document.querySelector('[data-screen="home"]');
-    const { profile, goals, dailyRecords, injections } = this.state;
+    const { profile, goals, dailyRecords } = this.state;
 
     const latest = Calc.latestWeightRecord(dailyRecords);
     const currentWeight = latest ? latest.weight : profile.startWeight;
@@ -251,10 +252,6 @@ const UI = {
       progressPct = ((profile.startWeight - currentWeight) / (profile.startWeight - goalWeight)) * 100;
       progressPct = Math.max(0, Math.min(100, progressPct));
     }
-
-    const nextInjection = injections
-      .filter((i) => i.status !== "administered")
-      .sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1))[0];
 
     // 375px比較試作用の切替（URLクエリ）。採用確定後に撤去する。
     //   ?lower=v1|v2 下部カード配置 / ?palette=a|b 配色 / ?bg=magic|magic2|page|fixed|top 背景方式
@@ -325,12 +322,7 @@ const UI = {
         <section class="card injection-card">
           <img class="injection-vase" src="${IMAGE_ASSETS.decoInjectionVase}" alt="" onerror="this.remove()" />
           <p class="card-title">${this.lineIcon("injection")}<span class="t-en">NEXT INJECTION</span><span class="t-jp">次回の注射</span></p>
-          ${
-            nextInjection
-              ? `<p class="injection-value">${nextInjection.scheduledAt}　${nextInjection.dose ?? "—"}mg</p>`
-              : `<p class="injection-value muted">未設定</p>`
-          }
-          <div class="placeholder-box">Phase4で実装予定（投与記録・次回提案）</div>
+          ${typeof InjectionUI !== "undefined" ? InjectionUI.homeCardInnerHtml(this.state) : ""}
         </section>
 
         <section class="card protein-card">
@@ -353,6 +345,7 @@ const UI = {
     this._bindGraphRange();
     this._bindAchievementBannerButtons();
     ProteinHomeUI.bindCard(this.state);
+    if (typeof InjectionUI !== "undefined") InjectionUI.bindHomeCard();
   },
 
   // 体重グラフの表示期間切替。状態はメモリ上のみ（保存データには書かない）

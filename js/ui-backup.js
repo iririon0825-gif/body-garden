@@ -110,11 +110,14 @@ const BackupUI = {
     corruptBackupFailed: "保存データを読み込めず、その退避もできなかったため、変更を保存しません（元のデータは消していません）。ブラウザの保存領域に空きを作ってから、再読み込みしてください。",
     staleTab: "他のタブでデータが更新されました。上書きを防ぐため、このタブでは変更を保存しません。再読み込みしてください。",
     saveFailed: "保存できませんでした（保存領域の不足など）。直近の変更が残っていない可能性があります。バックアップを書き出してください。",
+    updateReady: "新しいバージョンが用意できました。作業を終えたら再読み込みすると、更新されます。",
   },
 
-  // 保存しない状態（読み取り専用）や、保存に失敗したことを知らせる帯
-  showBanner(kind) {
+  // 保存しない状態（読み取り専用）や、保存に失敗したこと、更新があることを知らせる帯。
+  // onlyIfEmpty: すでに別の帯（より重要な案内）が出ているときは、上書きしない
+  showBanner(kind, { onlyIfEmpty = false } = {}) {
     let banner = document.getElementById("readonly-banner");
+    if (banner && onlyIfEmpty) return;
     if (!banner) {
       banner = document.createElement("div");
       banner.id = "readonly-banner";
@@ -123,6 +126,8 @@ const BackupUI = {
       document.body.insertBefore(banner, document.body.firstChild);
     }
     banner.textContent = this.BANNER_MESSAGES[kind] || "データを守るため、変更を保存しません。";
+    // 更新のお知らせは、データを守るための警告とは色を分ける
+    banner.classList.toggle("is-info", kind === "updateReady");
   },
 
   showReadOnlyBannerIfNeeded() {

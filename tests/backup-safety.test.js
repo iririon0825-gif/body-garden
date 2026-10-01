@@ -59,7 +59,7 @@ test("復元後の保存データは schemaVersion が先頭の項目になる",
   const s = sampleState(env);
   const reordered = { profile: s.profile, ...s }; // 先頭が schemaVersion でない形
   assert.equal(env.Backup.applyRestore(reordered).ok, true);
-  assert.match(env.ls.getItem(env.STORAGE_KEY), /^\{"schemaVersion":4,/);
+  assert.match(env.ls.getItem(env.STORAGE_KEY), /^\{"schemaVersion":5,/);
 });
 
 // ============ ストレージの安全策 ============
@@ -71,7 +71,7 @@ test("読み込み: 壊れたデータの退避に失敗したら、初期状態
   const s = env.Storage.load();
   assert.equal(env.Storage.readOnly, true);
   assert.equal(env.Storage.readOnlyReason, "corruptBackupFailed");
-  assert.equal(s.schemaVersion, 4, "メモリ上の初期状態で起動できる");
+  assert.equal(s.schemaVersion, 5, "メモリ上の初期状態で起動できる");
   assert.equal(env.ls.getItem(env.STORAGE_KEY), "{壊れている", "元のデータは消されない");
 });
 

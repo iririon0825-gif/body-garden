@@ -21,7 +21,7 @@ const Backup = {
   COUNT_KEYS: ["dailyRecords", "proteinEntries", "conditionEntries", "injections", "proteinProducts", "registeredFoods"],
   KNOWN_TOP_KEYS: [
     "schemaVersion", "profile", "goals", "dailyRecords", "proteinEntries", "conditionEntries",
-    "guardrails", "injections", "proteinProducts", "registeredFoods", "ui",
+    "guardrails", "injections", "injectionSchedule", "injectionStock", "proteinProducts", "registeredFoods", "ui",
   ],
   SCREENS: ["home", "records", "injection", "composition", "settings"],
 
@@ -195,6 +195,20 @@ const Backup = {
     }
 
     const warnings = [];
+    // 在庫の設定が無いバックアップ（開発中の形式）は、初期値を入れる。既存の投与済みの記録は削除せず、
+    // 実記録かテスト用か判別できないので「要確認」にする（24本から自動で差し引かない）
+    if (this._isObj(candidate) && candidate.schemaVersion === SCHEMA_VERSION) {
+      if (!candidate.injectionSchedule && typeof createDefaultInjectionSchedule === "function") candidate.injectionSchedule = createDefaultInjectionSchedule();
+      if (!candidate.injectionStock && typeof applyStockBaseline === "function") {
+        applyStockBaseline(candidate);
+        warnings.push("在庫（残本数）の設定がないため、初期値を入れました。既存の投与記録は、使用本数に含めるかどうかの確認が必要な状態にしています。");
+      }
+    }
+    // 古い形式（v4など）の移行で、在庫の確認待ちの記録ができたときも、取り込む前に知らせる
+    if (this._isObj(candidate) && Array.isArray(candidate.injections) && fileVersion < SCHEMA_VERSION) {
+      const n = candidate.injections.filter((r) => r && r.status === "administered" && r.stockCount === "review").length;
+      if (n > 0) warnings.push(`投与済みの記録が${n}件あります。在庫（残本数）への数え方は、取り込み後に本人が確認する状態（要確認）になります。`);
+    }
     // 未知の最上位キーは取り込まない
     for (const k of Object.keys(candidate)) {
       if (!this.KNOWN_TOP_KEYS.includes(k)) {
@@ -406,17 +420,110 @@ const Backup = {
       if (!tsOrNull(s.guardrails.bmi20.acknowledgedAt === undefined ? null : s.guardrails.bmi20.acknowledgedAt)) err("guardrails.bmi20.acknowledgedAt が不正です");
     }
 
-    // injections（Phase4で形式が変わる。ここは現行v4の形のみ）
+    // injections（v5）。形式を変えるときは、この検証とテストを同じ変更で更新すること
+    const doseOptions = typeof INJECTION_DOSE_OPTIONS_MG !== "undefined" ? INJECTION_DOSE_OPTIONS_MG : null;
     const inj = list("injections");
     uniqueIds("injections", inj, true);
+    const nullable = (v) => (v === undefined ? null : v);
+    const checkSnapshotCheck = (c, where) => {
+      // 72時間判定のスナップショット（missedCheck / history[].check）。表示用の値なので、型と範囲だけを確認する
+      if (c === null || c === undefined) return;
+      if (!isObj(c)) return err(`${where} が不正です`);
+      if (c.result !== undefined && !oneOf(c.result, ["ge72", "lt72", "unknown", "noHistory"])) err(`${where}.result が不正です`);
+      for (const k of ["minMs", "maxMs"]) if (c[k] !== undefined && !numOrNull(c[k])) err(`${where}.${k} が数値ではありません`);
+      for (const k of ["firstDate", "target"]) if (c[k] !== undefined && !dateOrNull(c[k])) err(`${where}.${k} が日付ではありません`);
+      for (const k of ["lastAdministered", "next", "now"]) {
+        if (c[k] === undefined || c[k] === null) continue;
+        if (!isObj(c[k]) || !date(c[k].date) || !(c[k].time === null || c[k].time === undefined || /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(c[k].time))) err(`${where}.${k} が不正です`);
+      }
+      if (c.judgedAt !== undefined && !ts(c.judgedAt)) err(`${where}.judgedAt が不正です`);
+    };
+    let scheduledCount = 0;
     inj.forEach((e, i) => {
       if (!isObj(e)) return;
-      if (!dateOrNull(e.scheduledAt === undefined ? null : e.scheduledAt)) err(`injections[${i}].scheduledAt が日付ではありません`);
-      if (!dateOrNull(e.administeredAt === undefined ? null : e.administeredAt)) err(`injections[${i}].administeredAt が日付ではありません`);
-      if (!numOrNull(e.dose === undefined ? null : e.dose)) err(`injections[${i}].dose が数値ではありません`);
-      if (!oneOf(e.status, ["scheduled", "administered", "skipped"])) err(`injections[${i}].status が不正です`);
-      if (e.comment !== undefined && !str(e.comment, this.LIMITS.text)) err(`injections[${i}].comment が不正です`);
+      const p = `injections[${i}]`;
+      if (!oneOf(e.status, ["scheduled", "administered", "skipped"])) err(`${p}.status が不正です`);
+      if (e.kind !== undefined && !oneOf(e.kind, ["regular", "oneOffChange", "makeup", "manual", "legacy"])) err(`${p}.kind が不正です`);
+      for (const k of ["regularDate", "scheduledAt", "administeredAt"]) {
+        if (!dateOrNull(nullable(e[k]))) err(`${p}.${k} が日付(YYYY-MM-DD)ではありません`);
+      }
+      for (const k of ["scheduledTime", "administeredTime"]) {
+        if (!time(nullable(e[k]))) err(`${p}.${k} が時刻(HH:MM)ではありません`);
+      }
+      if (!numOrNull(nullable(e.dose))) err(`${p}.dose が数値ではありません`);
+      else if (num(e.dose) && doseOptions && !doseOptions.includes(e.dose)) warn(`${p} の用量(${e.dose}mg)が製剤規格の選択肢にありません`);
+      if (e.doseConfirmedDifferent !== undefined && typeof e.doseConfirmedDifferent !== "boolean") err(`${p}.doseConfirmedDifferent が真偽値ではありません`);
+      if (e.skipReason !== undefined && !(e.skipReason === null || oneOf(e.skipReason, ["missedUnder72h", "missedUnknown", "userChoice"]))) err(`${p}.skipReason が不正です`);
+      if (e.stockCount !== undefined && !(e.stockCount === null || oneOf(e.stockCount, ["counts", "excluded", "review"]))) err(`${p}.stockCount が不正です`);
+      checkSnapshotCheck(e.missedCheck, `${p}.missedCheck`);
+      if (e.scheduleVersionId !== undefined && e.scheduleVersionId !== null && !intId(e.scheduleVersionId)) err(`${p}.scheduleVersionId が不正です`);
+      if (e.comment !== undefined && !str(e.comment, this.LIMITS.text)) err(`${p}.comment が不正です`);
+      for (const k of ["createdAt", "updatedAt"]) if (e[k] !== undefined && !tsOrNull(e[k])) err(`${p}.${k} が不正です`);
+      // 以前のデータ（v4以前）に実施日のない投与済みがありうる。計算からは除外されるが、復元は止めず警告にとどめる
+      if (e.status === "administered" && !e.administeredAt) warn(`${p} は投与済みですが実施日がありません（計算からは除外されます）`);
+      if (e.status === "administered" && e.dose === null) warn(`${p} は投与済みですが用量がありません`);
+      if (e.status === "scheduled") {
+        scheduledCount += 1;
+        if (!e.scheduledAt) warn(`${p} は予定ですが予定日がありません`);
+      }
     });
+    if (scheduledCount > 1) warn("未投与の予定が複数あります（最も早いものを使います）");
+
+    // injectionStock（在庫の設定。残本数は保存せず、投与記録から計算する）
+    if (!isObj(s.injectionStock)) {
+      err("injectionStock がありません");
+    } else {
+      const k = s.injectionStock;
+      if (!(Number.isInteger(k.initialPens) && k.initialPens >= 0 && k.initialPens <= 10000)) err("injectionStock.initialPens が不正です");
+      if (!tsOrNull(k.setupAt === undefined ? null : k.setupAt)) err("injectionStock.setupAt が不正です");
+    }
+
+    // injectionSchedule（v5。定例スケジュールのルールと変更履歴）
+    if (!isObj(s.injectionSchedule)) {
+      err("injectionSchedule がありません");
+    } else {
+      const sch = s.injectionSchedule;
+      const r = sch.regular;
+      if (r !== null && r !== undefined) {
+        if (!isObj(r)) {
+          err("injectionSchedule.regular が不正です");
+        } else {
+          if (!intId(r.id)) err("injectionSchedule.regular.id が不正です");
+          if (!(Number.isInteger(r.weekday) && r.weekday >= 0 && r.weekday <= 6)) err("injectionSchedule.regular.weekday が不正です");
+          if (!time(nullable(r.time))) err("injectionSchedule.regular.time が時刻(HH:MM)ではありません");
+          if (!date(r.effectiveFrom)) err("injectionSchedule.regular.effectiveFrom が日付ではありません");
+          else if (Number.isInteger(r.weekday)) {
+            const [y, m, d] = r.effectiveFrom.split("-").map(Number);
+            if (new Date(y, m - 1, d).getDay() !== r.weekday) err("injectionSchedule.regular.effectiveFrom の曜日が weekday と一致しません");
+          }
+        }
+      }
+      if (!(sch.baseDoseMg === null || sch.baseDoseMg === undefined || num(sch.baseDoseMg))) err("injectionSchedule.baseDoseMg が数値ではありません");
+      else if (num(sch.baseDoseMg) && doseOptions && !doseOptions.includes(sch.baseDoseMg)) warn("基準用量が製剤規格の選択肢にありません");
+      if (!Array.isArray(sch.history)) {
+        err("injectionSchedule.history が配列ではありません");
+      } else if (sch.history.length > this.MAX_ITEMS) {
+        err("injectionSchedule.history の件数が多すぎます");
+      } else {
+        const seen = new Set();
+        sch.history.forEach((h, i) => {
+          const p = `injectionSchedule.history[${i}]`;
+          if (!isObj(h)) return err(`${p} がオブジェクトではありません`);
+          if (!intId(h.id)) err(`${p}.id が不正です`);
+          else if (seen.has(h.id)) err(`${p}.id が重複しています`);
+          else seen.add(h.id);
+          if (!ts(h.changedAt)) err(`${p}.changedAt が不正です`);
+          if (!oneOf(h.type, ["set", "weekdayChange", "timeChange", "clear"])) err(`${p}.type が不正です`);
+          for (const k of ["from", "to"]) {
+            const v = h[k];
+            if (v === null || v === undefined) continue;
+            if (!isObj(v) || !(Number.isInteger(v.weekday) && v.weekday >= 0 && v.weekday <= 6) || !time(nullable(v.time)) || !(v.effectiveFrom === undefined || date(v.effectiveFrom))) err(`${p}.${k} が不正です`);
+          }
+          checkSnapshotCheck(h.check, `${p}.check`);
+          if (h.replacedScheduledId !== undefined && h.replacedScheduledId !== null && !intId(h.replacedScheduledId)) err(`${p}.replacedScheduledId が不正です`);
+        });
+      }
+    }
 
     // proteinProducts / registeredFoods
     const pp = list("proteinProducts");

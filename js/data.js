@@ -3,7 +3,25 @@
 // すべて profile / goals / proteinProducts / registeredFoods に保持し、
 // UI側は必ずこれらを参照する。
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
+
+// ============ 注射管理の定数 ============
+// 製剤規格（マンジャロ皮下注アテオス、各0.5mL）。出典: 日本イーライリリー電子添付文書
+// https://medical.lilly.com/jp/mounjaro/mounjaro-package-insert（2026年9月改訂 第11版）、KEGG(JAPIC)。
+// 2026-10-01 に一次情報で再照合済み。選択式で、自由入力はしない。アプリは増量・減量を勧めない。
+const INJECTION_DOSE_OPTIONS_MG = [2.5, 5, 7.5, 10, 12.5, 15];
+const INJECTION_INITIAL_DOSE_MG = 2.5; // 入力画面の初期選択。推奨用量ではない
+// 電子添付文書 7.2: 投与を忘れた場合・投与曜日を変更する場合の「3日間（72時間）」
+const INJECTION_THRESHOLD_MS = 72 * 60 * 60 * 1000;
+// 電子添付文書 7.1: 週1回投与（同一曜日）
+const INJECTION_CYCLE_DAYS = 7;
+// アプリ独自の注意表示基準（添付文書の基準ではなく、再開可否の判断基準でもない）
+const INJECTION_LONG_GAP_DAYS = 28;
+// 予定日として登録できる範囲（入力ミス防止。医療上の基準ではない）
+const INJECTION_SCHEDULE_MAX_DAYS_AHEAD = 90;
+const INJECTION_COMMENT_MAX = 500;
+// 手持ちの注射の本数（初期在庫）。入庫・購入の管理はしない。実際の投与記録（1回につき1本）から残りを計算する
+const INJECTION_STOCK_INITIAL_PENS = 24;
 
 // 入力バリデーションの範囲（単純な入力ミス防止。医療的な適正範囲判定ではない）
 const VALIDATION_RANGES = {
@@ -146,17 +164,70 @@ function createConditionEntry(date) {
   };
 }
 
-// 予定日(scheduledAt)と実施日(administeredAt)は必ず別フィールドに保持する。
-// status: 'scheduled' | 'administered' | 'skipped'
+// 注射の1件分の記録（v5）。予定日(scheduledAt)と実施日(administeredAt)は必ず別フィールドに保持する。
+//
+// status（状態）: 'scheduled'（予定。未投与）| 'administered'（実際に投与した記録）| 'skipped'（見送りの記録）
+// kind（種別。statusとは別の軸）:
+//   'regular'      定例の系列にある回
+//   'oneOffChange' 定例回の日程を、その1回だけ変更した予定（regularDateは元の定例日のまま）
+//   'makeup'       打ち忘れ後の臨時投与（定例曜日は変わらない）
+//   'manual'       定例スケジュールに紐づかない記録・予定
+//   'legacy'       v4以前から引き継いだ記録
+// regularDate: この記録が属する定例日。定例曜日を変更しても、過去の記録の解釈は変わらない。
+// scheduledTime / administeredTime: "HH:MM" または null（時刻不明は許容）。
+// skipReason: 'missedUnder72h' | 'missedUnknown' | 'userChoice'（本人が確認して記録した見送りのみ）
+// missedCheck: 見送りを記録した時点の72時間判定のスナップショット（後から確認するため）
 function createEmptyInjection() {
   return {
     id: null, // storage.js で採番
-    scheduledAt: null,
-    administeredAt: null,
-    dose: null,
     status: "scheduled",
+    kind: "manual",
+    regularDate: null,
+    scheduledAt: null,
+    scheduledTime: null,
+    administeredAt: null,
+    administeredTime: null,
+    dose: null, // mg（INJECTION_DOSE_OPTIONS_MG のいずれか）
+    doseConfirmedDifferent: false,
+    skipReason: null,
+    missedCheck: null,
+    scheduleVersionId: null,
+    // 在庫（使用本数）への数え方。null＝通常（投与済みなら1本として数える）、
+    // 'review'＝在庫の設定時点ですでにあった投与記録。実記録かテスト用か判別できないため、本人が確認するまで数えない、
+    // 'counts'＝本人が「使用した分」と確認した、'excluded'＝本人が「使用本数に含めない」と確認した
+    stockCount: null,
     comment: "",
+    createdAt: null,
+    updatedAt: null,
   };
+}
+
+// 在庫（残本数）の設定。残りは保存せず、投与記録（status='administered'）から毎回計算する
+// （投与のたびに数値を減らすと、二重減算・修正や削除との食い違いが起きるため）。
+//   initialPens: 初期在庫（本）。実際の使用済みは0本から数え始める。
+function createDefaultInjectionStock() {
+  return { initialPens: INJECTION_STOCK_INITIAL_PENS, setupAt: null };
+}
+
+// 在庫の設定がまだ無い状態（v4からの移行・開発中のv5データ）に、初期値を入れる。
+// このとき既にある「投与済み」の記録は、実記録かテスト用か判別できないので、24本から自動で差し引かず、
+// stockCount='review'（本人が確認するまで数えない）にする。既存の記録は削除も上書きもしない。
+function applyStockBaseline(state, nowIso) {
+  if (state.injectionStock) return state;
+  state.injectionStock = createDefaultInjectionStock();
+  state.injectionStock.setupAt = nowIso || new Date().toISOString();
+  for (const rec of Array.isArray(state.injections) ? state.injections : []) {
+    if (rec && rec.status === "administered" && (rec.stockCount === undefined || rec.stockCount === null)) rec.stockCount = "review";
+  }
+  return state;
+}
+
+// 定例スケジュール（ルール）。定例予定日そのものは保存せず、ここから導出する。
+//   regular: { id, weekday(0=日〜6=土), time("HH:MM"|null), effectiveFrom("YYYY-MM-DD") } | null
+//   baseDoseMg: 用量の基準（未設定なら直近の投与の用量にフォールバック）
+//   history: 定例の設定・曜日変更・時刻変更の履歴（変更時の72時間判定の結果つき）
+function createDefaultInjectionSchedule() {
+  return { regular: null, baseDoseMg: null, history: [] };
 }
 
 // status: 'active' | 'archived'。使用済み商品は物理削除せずarchiveする（過去記録保護のため）。
@@ -178,7 +249,9 @@ function createDefaultState() {
     proteinEntries: [], // createProteinEntry() の配列。1日に複数件持てる
     conditionEntries: [], // createConditionEntry() の配列。1日に複数件持てる
     guardrails: createDefaultGuardrails(),
-    injections: [],
+    injections: [], // createEmptyInjection() の配列
+    injectionSchedule: createDefaultInjectionSchedule(),
+    injectionStock: createDefaultInjectionStock(),
     proteinProducts: JSON.parse(JSON.stringify(DEFAULT_PROTEIN_PRODUCTS)),
     registeredFoods: JSON.parse(JSON.stringify(DEFAULT_REGISTERED_FOODS)),
     ui: {

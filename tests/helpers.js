@@ -37,14 +37,14 @@ function loadEnv() {
     JSON,
     Math,
   });
-  for (const f of ["data.js", "calc.js", "storage.js", "protein-logic.js", "backup.js"]) {
+  for (const f of ["data.js", "calc.js", "storage.js", "protein-logic.js", "injection-logic.js", "backup.js"]) {
     vm.runInContext(fs.readFileSync(path.join(JS_DIR, f), "utf8"), ctx, { filename: f });
   }
   const get = (expr) => vm.runInContext(expr, ctx);
   return { ls, ctx, get, Backup: get("Backup"), Storage: get("Storage"), STORAGE_KEY: get("STORAGE_KEY") };
 }
 
-// 実データ相当のダミー状態（v4）
+// 実データ相当のダミー状態（v5）
 function sampleState(env) {
   const s = env.get("createDefaultState()");
   s.profile.startDate = "2026-09-29";
@@ -58,7 +58,8 @@ function sampleState(env) {
     { id: 2, date: "2026-10-01", time: null, sourceType: "meal", sourceId: null, sourceName: "サラダチキン", quantity: null, unitProtein: null, servingScoops: null, proteinTotal: 24, memo: "半分", createdAt: "2026-10-01T12:00:00.000Z" },
   ];
   s.conditionEntries = [{ id: 1, date: "2026-10-01", time: "21:10", level: "mild", symptoms: ["nausea"], comment: "", createdAt: "2026-10-01T12:10:00.000Z" }];
-  s.injections = [{ id: 1, scheduledAt: "2026-10-08", administeredAt: null, dose: 2.5, status: "scheduled", comment: "" }];
+  s.injections = [Object.assign(env.get("createEmptyInjection()"), { id: 1, scheduledAt: "2026-10-08", regularDate: "2026-10-08", scheduledTime: "09:00", kind: "regular", status: "scheduled" })];
+  s.injectionSchedule = { regular: { id: 1, weekday: 4, time: "09:00", effectiveFrom: "2026-10-08" }, baseDoseMg: null, history: [{ id: 1, changedAt: "2026-10-01T00:00:00.000Z", type: "set", from: null, to: { weekday: 4, time: "09:00", effectiveFrom: "2026-10-08" }, check: null, replacedScheduledId: null }] };
   s.goals.goalHistory = [{ id: 1, timestamp: "2026-10-01T00:00:00.000Z", type: "achieved", goalKey: "goal1", detail: { date: "2026-10-01", weight: 66.2 } }];
   return s;
 }
