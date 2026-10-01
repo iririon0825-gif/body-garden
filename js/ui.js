@@ -54,7 +54,10 @@ const UI = {
 
   renderScreen(screenName) {
     if (screenName === "home") this.renderHome();
-    if (screenName === "settings") SettingsUI.render(this.state);
+    if (screenName === "settings") {
+      SettingsUI.render(this.state);
+      if (typeof CsvUI !== "undefined") CsvUI.render(this.state);
+    }
     if (screenName === "records") {
       RecordsUI.render(this.state);
       if (typeof ConditionUI !== "undefined") ConditionUI.renderDetail(this.state);
