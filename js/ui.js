@@ -55,7 +55,10 @@ const UI = {
   renderScreen(screenName) {
     if (screenName === "home") this.renderHome();
     if (screenName === "settings") SettingsUI.render(this.state);
-    if (screenName === "records") RecordsUI.render(this.state);
+    if (screenName === "records") {
+      RecordsUI.render(this.state);
+      if (typeof ConditionUI !== "undefined") ConditionUI.renderDetail(this.state);
+    }
     if (screenName === "injection" && typeof InjectionUI !== "undefined") InjectionUI.render(this.state);
     if (screenName === "maintenance-prep") this.renderMaintenancePrep();
     if (screenName === "composition" && typeof CompositionUI !== "undefined") CompositionUI.render(this.state);
@@ -332,8 +335,7 @@ const UI = {
 
       <div class="home-grid-2col">
         <section class="card condition-card">
-          <p class="card-title">${this.lineIcon("condition")}今日の体調</p>
-          <div class="placeholder-box">Phase4で実装予定（なし／軽い／あり＋詳細）</div>
+          ${typeof ConditionUI !== "undefined" ? ConditionUI.homeCardInnerHtml(this.state) : `<p class="card-title">${this.lineIcon("condition")}今日の体調・副作用</p>`}
         </section>
 
         ${this._goalStatusCardHtml()}
@@ -346,6 +348,7 @@ const UI = {
     this._bindAchievementBannerButtons();
     ProteinHomeUI.bindCard(this.state);
     if (typeof InjectionUI !== "undefined") InjectionUI.bindHomeCard();
+    if (typeof ConditionUI !== "undefined") ConditionUI.bindHomeCard();
   },
 
   // 体重グラフの表示期間切替。状態はメモリ上のみ（保存データには書かない）

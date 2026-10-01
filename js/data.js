@@ -331,6 +331,12 @@ const IMAGE_ASSETS = {
   milestoneMaintenance: "assets/body-garden/milestone-maintenance.png",
 };
 
+// 体調の3段階（なし／軽い／あり）の顔アイコン画像。制作中のため未設定（null）。
+// 画像ができたら、ここにパスを入れるだけで枠の中に表示される（例: "assets/body-garden/face-none.png"）。
+// 未設定・読み込めないときは、固定の枠と文字ラベルだけを表示する。絵文字や仮のイラストで代用しない。
+// 画像を足すときは、オフラインで表示できるよう service-worker.js の STATIC_URLS にも足し、CACHE_VERSION を上げる。
+const CONDITION_FACE_ASSETS = { none: null, mild: null, moderate: null };
+
 const CONDITION_SYMPTOMS = [
   { id: "nausea", label: "悪心" },
   { id: "indigestion", label: "胃もたれ" },

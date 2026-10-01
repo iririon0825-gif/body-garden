@@ -1295,7 +1295,8 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
     position: relative;
     z-index: 1;
   }
-  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card .placeholder-box {
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card .placeholder-box,
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card .cond-actions {
     margin-right: 28px;
   }
 
@@ -1672,7 +1673,10 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
     z-index: 0;
   }
   [data-screen="home"][data-bg="magic"] .condition-card > * { position: relative; z-index: 1; }
-  [data-screen="home"][data-bg="magic"] .condition-card .placeholder-box { margin-right: clamp(40px, 6cqw, 70px); }
+  [data-screen="home"][data-bg="magic"] .condition-card .placeholder-box,
+  [data-screen="home"][data-bg="magic"] .condition-card .cond-actions,
+  [data-screen="home"][data-bg="magic"] .condition-card .cond-unsaved { margin-right: clamp(48px, 7.5cqw, 76px); }
+  [data-screen="home"][data-bg="magic"] .condition-card .cond-memo { width: calc(100% - clamp(48px, 7.5cqw, 76px)); }
 
   /* ---- ページ背景（HOME本体の左右の余白）：夜景HOMEが表示中のときだけ、中央の夜景に
      つながる濃紺〜青紫にする。v4画像の左右端の平均色（縦方向）から取った段階色で、
@@ -1752,3 +1756,57 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .comp-hsub { font-size: 0.76rem; color: var(--text-lo); grid-column: 1; }
 .comp-hactions { grid-column: 2; grid-row: 1 / span 2; }
 .comp-detail { margin-bottom: 10px; }
+
+/* ============ 体調・副作用（HOMEカード・記録タブ） ============ */
+.cond-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 8px; }
+.cond-head .card-title { margin-bottom: 4px; }
+.cond-more { background: none; border: none; padding: 4px 0; font-family: var(--font-body); font-size: 0.72rem; color: var(--text-lo); cursor: pointer; white-space: nowrap; }
+.cond-status { font-size: 0.72rem; line-height: 1.5; color: var(--text-lo); margin: 0 0 4px; }
+.cond-note { font-size: 0.76rem; line-height: 1.6; color: var(--text-lo); margin: 0 0 8px; }
+.cond-sub { font-size: 0.8rem; color: var(--text-lo); margin: 10px 0 6px; }
+.cond-msg { font-size: 0.78rem; line-height: 1.5; font-weight: 700; color: var(--teal); margin: 0 0 6px; }
+.cond-unsaved { font-size: 0.72rem; line-height: 1.5; color: #8a5a10; margin: 0 0 6px; }
+.cond-faces { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 6px 0 8px; }
+.cond-face-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-height: 44px; padding: 6px 2px; border-radius: 16px;
+  border: 1px solid transparent; background: transparent; color: inherit;
+  font-family: var(--font-body); cursor: pointer;
+}
+.cond-face-btn.is-selected { background: rgba(255, 255, 255, 0.78); border-color: rgba(214, 150, 170, 0.7); box-shadow: 0 0 0 2px rgba(240, 190, 205, 0.35); }
+.cond-face-btn.is-locked { cursor: default; }
+.cond-face-btn.is-locked:not(.is-selected) { opacity: 0.55; }
+.cond-face-label { font-size: 0.7rem; font-weight: 700; line-height: 1.3; }
+/* 顔アイコンの枠。画像は CONDITION_FACE_ASSETS で後から差し替える（未設定の間は、点線の円の枠だけ） */
+.cond-face { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; overflow: hidden; border: 1px dashed rgba(120, 100, 170, 0.4); background: rgba(255, 255, 255, 0.55); flex-shrink: 0; }
+.cond-face:has(img) { border-color: transparent; background: transparent; }
+.cond-face img { width: 100%; height: 100%; object-fit: cover; }
+.cond-memo { width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 16px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.7); color: var(--text-hi); }
+.cond-memo-view { font-size: 0.8rem; line-height: 1.5; margin: 0 0 6px; white-space: pre-line; overflow-wrap: anywhere; max-height: 4.6em; overflow: hidden; }
+.cond-memo-view.is-empty { color: var(--text-lo); }
+.cond-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cond-btn { padding: 8px 12px; font-size: 0.78rem; }
+.cond-faces-detail .cond-face { width: 48px; height: 48px; }
+.cond-faces-detail .cond-face-label { font-size: 0.8rem; }
+.cond-symptoms { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px 10px; margin-bottom: 10px; }
+.cond-symptoms .cond-note { grid-column: 1 / -1; margin: 4px 0 0; }
+.cond-symptom { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; min-height: 32px; }
+.cond-memo-field { margin-bottom: 10px; }
+.cond-textarea { width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 1rem; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.6); color: var(--text-hi); resize: vertical; }
+.cond-day { margin-bottom: 10px; }
+.cond-day-head { font-size: 0.82rem; font-weight: 700; margin: 0 0 2px; font-variant-numeric: tabular-nums; }
+.cond-day-count { font-weight: 500; font-size: 0.72rem; color: var(--text-lo); margin-left: 8px; }
+.cond-list { list-style: none; margin: 0; padding: 0; }
+.cond-row { padding: 6px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.cond-row-main { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 0.85rem; }
+.cond-row-time { font-variant-numeric: tabular-nums; color: var(--text-lo); min-width: 2.8em; }
+.cond-row-memo { font-size: 0.8rem; line-height: 1.5; margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cond-row-actions { display: flex; gap: 4px; }
+.cond-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
+.cond-tab { flex: 1; min-height: 40px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.45); color: var(--text-hi); font-family: var(--font-body); font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.cond-tab.is-active { background: linear-gradient(90deg, var(--teal), var(--dusty-pink)); border-color: transparent; color: #fff; }
+.cond-chip { display: inline-block; font-size: 0.7rem; font-weight: 700; line-height: 1.6; padding: 0 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.06); color: var(--text-hi); }
+.cond-chip-none { background: rgba(80, 160, 140, 0.16); color: #2f7566; }
+.cond-chip-mild { background: rgba(124, 108, 200, 0.14); color: #4a3d8f; }
+.cond-chip-moderate { background: rgba(214, 150, 170, 0.22); color: #7d3e55; }
+.cond-chip-sym { background: rgba(255, 255, 255, 0.6); border: 1px solid var(--card-border); font-weight: 500; }

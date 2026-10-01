@@ -37,7 +37,7 @@ function loadEnv() {
     JSON,
     Math,
   });
-  for (const f of ["data.js", "calc.js", "storage.js", "logic.js", "protein-logic.js", "injection-logic.js", "body-composition-logic.js", "backup.js"]) {
+  for (const f of ["data.js", "calc.js", "storage.js", "logic.js", "protein-logic.js", "injection-logic.js", "body-composition-logic.js", "condition-logic.js", "backup.js"]) {
     vm.runInContext(fs.readFileSync(path.join(JS_DIR, f), "utf8"), ctx, { filename: f });
   }
   const get = (expr) => vm.runInContext(expr, ctx);

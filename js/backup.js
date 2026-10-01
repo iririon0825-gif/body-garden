@@ -438,7 +438,7 @@ const Backup = {
     const ce = list("conditionEntries");
     uniqueIds("conditionEntries", ce, true);
     // data.js の createConditionEntry のコメントにある症状ID（未知のIDは拒否せず警告のみ）
-    const knownSymptoms = ["nausea", "indigestion", "constipation", "diarrhea", "abdominalPain", "appetiteLoss", "other"];
+    const knownSymptoms = typeof CONDITION_SYMPTOMS !== "undefined" ? CONDITION_SYMPTOMS.map((x) => x.id) : ["nausea", "indigestion", "constipation", "diarrhea", "abdominalPain", "appetiteLoss", "other"];
     ce.forEach((e, i) => {
       if (!isObj(e)) return;
       if (!date(e.date)) err(`conditionEntries[${i}].date が日付ではありません`);

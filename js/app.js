@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.init(state);
     BackupUI.showReadOnlyBannerIfNeeded();
     BackupUI.watchStorage();
+    if (typeof ConditionUI !== "undefined") ConditionUI.watchDate();
   }
 
   if ("serviceWorker" in navigator) {
