@@ -1,10 +1,30 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap");
+/* Body Garden 全体の書体：姉妹アプリTonight Garden（entry.css）と同じ解星デコール
+   1ファミリーに統一。外部CDN非依存・assets/fonts/に自己ホスト。
+   ライセンス＝SIL OFL 1.1（© 2016 Font-Kai, Kazuo KANAI／assets/fonts/OFL-KaiseiDecol.txt）。
+   W4(400)=本文・数値・ボタン・Navigation、W5(500)=見出し・タイトル。700相当の太字指定は
+   ウェイトファイルを持たないためブラウザのフォント合成（疑似ボールド）で表示される。 */
+@font-face {
+  font-family: "Kaisei Decol";
+  src: url("../assets/fonts/KaiseiDecol-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Kaisei Decol";
+  src: url("../assets/fonts/KaiseiDecol-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
-  --font-display: "Cormorant Garamond", "Zen Kaku Gothic New", serif;
-  --font-body: "Zen Kaku Gothic New", sans-serif;
+  --font-display: "Kaisei Decol", "游明朝体", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  --font-body: "Kaisei Decol", "游明朝体", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  --home-heading: #4d4270;
 
   /* Body Garden：静かな朝の庭 */
+  --icon-line: #9b93b3; /* 線アイコンの基本色：ラベンダーグレー */
   --bg-0: #f7f4f1;
   --bg-1: #fbf8f5;
   --lavender: #b7a9d6;
@@ -53,16 +73,16 @@
 body {
   margin: 0;
   font-family: var(--font-body);
-  background: linear-gradient(180deg, var(--morning-light) 0%, var(--bg-0) 40%);
+  background: linear-gradient(180deg, var(--morning-light) 0%, var(--lavender-soft) 30%, var(--bg-0) 70%);
   color: var(--text-hi);
   min-height: 100vh;
-  padding-bottom: 88px;
+  padding-bottom: 104px;
 }
 
 main {
   max-width: 480px;
   margin: 0 auto;
-  padding: 20px 16px 24px;
+  padding: 14px 16px 20px;
 }
 
 .card {
@@ -71,25 +91,41 @@ main {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-glass);
   backdrop-filter: blur(14px);
-  padding: 16px 18px;
-  margin-bottom: 12px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
 }
 
 .card-title {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--text-lo);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   letter-spacing: 0.02em;
   display: flex;
   align-items: center;
+}
+
+/* 数値の可読性：書体そのものは統一しつつ、tabular-numsで桁を揃え、
+   大きい数字はわずかに字間を広げて判読性を確保する */
+.current-weight,
+.stat-value,
+.protein-value,
+.injection-value,
+.hero-change-badge,
+.hero-goal-bubble,
+.goal-status-mode,
+.record-history-weight,
+.protein-entry-amount,
+input[type="number"] {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .current-weight {
   font-size: 3rem;
   font-weight: 700;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
   color: var(--text-hi);
 }
 .current-weight .unit {
@@ -108,7 +144,7 @@ main {
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .stat {
   display: flex;
@@ -116,7 +152,7 @@ main {
   align-items: center;
   background: rgba(255, 255, 255, 0.35);
   border-radius: var(--radius-md);
-  padding: 8px 4px;
+  padding: 6px 4px;
 }
 .stat-label {
   font-size: 0.65rem;
@@ -126,10 +162,11 @@ main {
 .stat-value {
   font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .remaining-line {
-  margin-top: 14px;
+  margin-top: 8px;
   font-size: 0.9rem;
   color: var(--teal);
   font-weight: 500;
@@ -138,7 +175,7 @@ main {
 .placeholder-box {
   border: 1px dashed var(--card-border);
   border-radius: var(--radius-md);
-  padding: 14px;
+  padding: 10px;
   font-size: 0.8rem;
   color: var(--text-lo);
   background: rgba(255, 255, 255, 0.25);
@@ -148,7 +185,7 @@ main {
 .protein-value, .injection-value {
   font-size: 1.4rem;
   font-weight: 700;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
 }
 .injection-value.muted { color: var(--text-lo); font-weight: 500; }
 
@@ -157,7 +194,7 @@ main {
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .progress-fill {
   height: 100%;
@@ -173,6 +210,11 @@ main {
   margin-bottom: 16px;
   height: 140px;
 }
+.bg-image-slot picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .bg-image-slot img {
   width: 100%;
   height: 100%;
@@ -181,12 +223,19 @@ main {
   display: block;
 }
 
-/* hero-morning.webp は縦長(1122x1402)の人物写真で中央部が主被写体のため、
-   固定高さではなく画像の縦横比に寄せたアスペクト比で表示する */
+/* モバイルはhero-morning.webp(4:5縦長)、700px以上はhero-morning-desktop.png(3:2横長)。
+   aspect-ratioとmax-heightを矛盾させない（矛盾するとobject-fit:coverが想定外にトリミングする）。
+   max-heightは実際の比率ではほぼ発生しない大きめの安全上限として置く */
 .bg-image-slot.hero-slot {
   height: auto;
   aspect-ratio: 4 / 5;
-  max-height: 420px;
+  max-height: 640px;
+}
+@media (min-width: 700px) {
+  .bg-image-slot.hero-slot {
+    aspect-ratio: 3 / 2;
+    max-height: 520px;
+  }
 }
 .bg-image-fallback {
   display: none;
@@ -197,50 +246,263 @@ main {
 .bg-image-slot.is-fallback img { display: none; }
 .bg-image-slot.is-fallback .bg-image-fallback { display: block; }
 
-/* ============ Hero一体化（写真＋現在値カードを一つのセクションに） ============ */
+/* ============ HOME全体の背景（仮適用比較） ============ */
+/* [data-screen="home"] 自体をisolation:isolateで独立したスタッキングコンテキストにし、
+   .home-bgをその中でz-index:-1に沈める。inset:0はセクションの実高さ（コンテンツ量で
+   決まるauto高さ）に追従するため、カードが増えて縦に伸びても背景は自動で伸びる */
+[data-screen="home"] {
+  position: relative;
+  isolation: isolate;
+}
+.home-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url("../assets/body-garden/home-bg-mobile-v1.png");
+  background-size: cover;
+  background-position: 78% top;
+  background-repeat: no-repeat;
+}
+@media (min-width: 700px) {
+  .home-bg {
+    /* 犬を焼き込まない背景に差し替え（犬はdeco-enisha.pngを独立配置）。
+       旧home-bg-desktop-v1.png（犬入り）はassetsに保持。X位置は朝日が
+       体重カードと人物の間に見える位置に合わせる */
+    background-image: url("../assets/body-garden/home-bg-desktop-no-dog-v1.png");
+    background-position: 80% top;
+  }
+}
+
+/* ============ Hero一体化（旧Hero写真は使わず、新HOME背景の上に
+   タイトル＋体重カードを直接配置する） ============ */
 .hero-section {
   position: relative;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
-.hero-section .hero-slot {
-  margin-bottom: 0;
-}
-.hero-title-overlay {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 2;
-  display: flex;
+.home-title-bar {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  margin: 4px 0 10px;
+  padding: 6px 18px 6px 10px;
+  background: rgba(250, 247, 255, 0.86);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  box-shadow: var(--shadow-glass);
 }
-.hero-title-overlay .brand-icon {
-  filter: drop-shadow(0 2px 6px rgba(40, 30, 40, 0.35));
+.home-title-bar .brand-icon {
+  width: 32px;
+  height: 32px;
 }
-.hero-title-text {
+.home-title-text {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 1.35rem;
-  letter-spacing: 0.08em;
-  color: #fffdfb;
-  text-shadow: 0 2px 10px rgba(50, 35, 45, 0.55);
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  color: var(--text-hi);
 }
 .hero-stat-card {
   position: relative;
-  z-index: 3;
-  margin: -52px 14px 0;
-  /* 写真に重なるため、低い不透明度だと下の写真の色むらがにじんで見える。
-     ほぼ不透明にして写真の上でもカードとして明瞭に浮き上がらせる */
-  background: var(--card-wash), rgba(255, 253, 250, 0.96);
+  /* 体重カードは他のHOMEカードより明るめのガラスパネル（完成モック基準） */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(147, 126, 196, 0.14)), rgba(255, 253, 250, 0.78);
 }
+
+/* ============ Hero行のデスクトップ分割（左：タイトル+体重カード／右：人物） ============
+   375pxでは単純な縦積みのまま。yuraRi人物はモバイルでは非表示にし、
+   人物を出すためにHero自体を巨大化させない */
+.hero-main { min-width: 0; }
+.hero-person { display: none; }
+/* モバイル用の犬なし背景は未到着。現行モバイル背景には犬が焼き込まれているため、
+   二重表示を避けてモバイルでは独立エニシャも非表示にする */
+.hero-enisha { display: none; }
+@media (min-width: 700px) {
+  .hero-section {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  /* 完成モック比：体重カードは横幅いっぱいに伸ばさず、右の人物との
+     面積バランスを保つ。コンテナが広がっても人物側の背景が見える余白を残す */
+  .hero-main { flex: 0 1 540px; }
+  /* Hero行の高さを--hero-hで比較できるようにする（既定は内容なりの高さ＝従来どおり）。
+     高さが余る場合はタイトル（上）と体重カード（下）の間に風景の余白を作る */
+  .hero-section {
+    --hero-h: 380px;
+    --hero-person-h: 286px;
+    min-height: var(--hero-h, 0px);
+  }
+  .hero-main {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .hero-main .home-title-bar { align-self: flex-start; }
+  /* 人物はバストアップ表示：表示枠をHero行の高さ内に収め、object-fit:cover＋
+     object-position:上寄せで顔・肩・ティーカップまでを見せ、脚・椅子側は枠外に出す。
+     枠下端はmaskで薄くフェードさせ、クリップ線が不自然に見えないようにする（画像原本は未加工） */
+  .hero-person {
+    display: block;
+    flex: 0 0 auto;
+    width: var(--hero-person-w, 360px);
+    height: var(--hero-person-h, 300px);
+    object-fit: cover;
+    object-position: 50% 0%;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+  }
+  /* エニシャ（犬）：背景に焼き込まず独立配置。完成モック同様、人物より上の右上付近に置く。
+     画像は正方形で上下に透明余白があるため、absoluteで余白ぶんを負のtopで相殺し、
+     見えている犬の本体が人物枠・タイトル・体重カードに重ならない位置に収める */
+  .hero-enisha {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: -58px;
+    width: 210px;
+    height: auto;
+    pointer-events: none;
+  }
+}
+/* 花束装飾（仮配置検証用）。旧Hero写真があった頃はカード上方の写真領域へ
+   大きくはみ出す配置だったが、Hero写真廃止によりカード直上はタイトルバーの
+   すぐ下になったため、カード左上の角に小さく添える程度に縮小し、
+   カード内テキスト（z-index:1）より下に沈めて数字と重ならないようにする */
+.hero-stat-card { --bouquet-h: 110px; }
+.hero-bouquet {
+  position: absolute;
+  left: -14px;
+  top: -8px;
+  height: var(--bouquet-h);
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-stat-card > *:not(.hero-bouquet) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============ HOME限定：完成モック基準の紫系ガラスパネル ============
+   共通.card（記録/設定/体組成などで使用）は変更せず、HOME各カード固有の
+   クラスにのみ上書きする＝HOMEスコープに限定する */
+.graph-card,
+.injection-card,
+.protein-card,
+.condition-card,
+.goal-status-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(147, 126, 196, 0.24));
+  border-color: rgba(255, 255, 255, 0.5);
+  /* 背景の湖・花が判別できるよう、共通.cardの14pxより弱めのぼかしにする */
+  backdrop-filter: blur(9px);
+}
+.graph-card .card-title,
+.injection-card .card-title,
+.protein-card .card-title,
+.condition-card .card-title,
+.goal-status-card .card-title {
+  color: var(--home-heading);
+}
+
+/* NEXT INJECTIONカードの花瓶装飾（仮配置）。右上に置き、日付・用量・
+   投与ボタン（カード下部）とは重ならない位置に収める */
+.injection-card {
+  position: relative;
+  overflow: hidden;
+}
+.injection-vase {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  height: 100px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.92;
+}
+.injection-card > *:not(.injection-vase) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Protein食品サムネイル（仮配置）。チップ内のテキストの前に小さく添える */
+.protein-food-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
 .hero-day-line {
   font-size: 0.8rem;
   color: var(--text-lo);
-  margin: 0 0 4px;
+  margin: 0 0 2px;
 }
 .hero-day-line strong {
   color: var(--text-hi);
   font-weight: 700;
+}
+
+.hero-weight-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hero-change-badge {
+  margin-top: 6px;
+  background: var(--morning-light);
+  color: var(--text-hi);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.hero-change-badge small {
+  font-weight: 500;
+  color: var(--text-lo);
+  margin-left: 3px;
+}
+
+.hero-progress-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 6px;
+}
+.hero-progress-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+.hero-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--dusty-pink));
+  border-radius: 999px;
+}
+.hero-goal-bubble {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--dusty-pink);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--dusty-pink-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.stat-row-mini {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 8px;
 }
 
 nav.bottom-nav {
@@ -250,48 +512,61 @@ nav.bottom-nav {
   right: 0;
   display: flex;
   justify-content: space-around;
-  background: var(--card-bg);
+  background: var(--card-wash), var(--card-bg);
   border-top: 1px solid var(--card-border);
   backdrop-filter: blur(14px);
-  padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
+  padding: 12px 4px calc(12px + env(safe-area-inset-bottom));
+  box-shadow: 0 -6px 20px rgba(150, 130, 160, 0.08);
 }
 nav.bottom-nav button {
   background: none;
   border: none;
   font-family: var(--font-body);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-lo);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 4px 8px;
-}
-nav.bottom-nav button .nav-icon { font-size: 1.2rem; }
-nav.bottom-nav button .nav-icon-img {
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
+  gap: 3px;
+  padding: 4px 10px;
 }
 nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 
-/* ============ カードタイトルのアイコン（正式アセット） ============ */
-/* カード見出し：32〜40px、主要状態表示(Goal/LOWER LINE/maintenance等)：36〜44px */
-.title-icon {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  flex-shrink: 0;
-  margin-right: 8px;
+/* ============ 線アイコン（SVG, currentColor） ============ */
+.nav-icon-svg {
+  width: 28px;
+  height: 28px;
+  color: var(--icon-line);
 }
-.title-icon.title-icon-lg {
-  width: 42px;
-  height: 42px;
+nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
+
+.title-icon-svg {
+  width: 28px;
+  height: 28px;
+  color: var(--icon-line);
+  flex-shrink: 0;
   margin-right: 10px;
 }
+
+/* ============ カードタイトルのアイコン（正式アセット） ============ */
+/* アイコン画像は周囲に透明な余白を含むため、外形サイズではなく中央モチーフの
+   視認サイズで判断する（外形は大きめに取る）。
+   カード見出し：48px起点／主要状態表示(Goal/LOWER LINE/maintenance等)：60px起点 */
+.title-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+.title-icon.title-icon-lg {
+  width: 60px;
+  height: 60px;
+  margin-right: 12px;
+}
 .brand-icon {
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -376,7 +651,7 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 
 /* ============ LOWER LINEバッジ ============ */
 .lower-line-badge {
-  margin-top: 14px;
+  margin-top: 8px;
   font-size: 0.85rem;
   color: var(--text-lo);
   background: rgba(255, 255, 255, 0.35);
@@ -451,8 +726,8 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 .protein-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0;
+  gap: 6px;
+  margin: 8px 0;
 }
 .chip-btn {
   font-family: var(--font-body);
@@ -461,8 +736,10 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
   background: rgba(255, 255, 255, 0.55);
   color: var(--text-hi);
   border-radius: 999px;
-  padding: 7px 14px;
+  padding: 4px 14px 4px 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
 }
 .protein-link-row {
   display: flex;
@@ -524,8 +801,8 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 .home-grid-2col {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 .home-grid-2col > .card {
   min-width: 0;
@@ -547,11 +824,16 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
 
 /* ============ グラフ共通 ============ */
 .chart-wrap { position: relative; }
+.chart-wrap-lg { height: 170px; min-height: 0; }
+.graph-card--empty .chart-wrap-lg,
+.graph-card--norange .chart-wrap-lg { height: auto; }
+.graph-card--empty .chart-empty-msg { padding: 0 0 2px; text-align: left; }
+.graph-card--norange .chart-empty-msg { padding: 10px 0; }
 .chart-empty-msg {
   text-align: center;
   font-size: 0.8rem;
   color: var(--text-lo);
-  padding: 30px 0;
+  padding: 40px 0;
 }
 
 @media (min-width: 600px) {
@@ -562,5 +844,752 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
   main { max-width: 780px; }
   .home-grid-2col {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* HOME画面のみ、完成モックの面積配分に合わせてコンテナ幅を広げる。
+   共通mainの780px上限は記録/設定/体組成など他画面にそのまま残すため、
+   :has()でHOMEが表示中のmainだけを対象にする */
+@media (min-width: 700px) {
+  main:has([data-screen="home"]:not([hidden])) {
+    max-width: 1000px;
+  }
+}
+
+/* ============ 体重グラフカード（全幅共通）：完成モック同様の濃い青紫パネル ============
+   線色はカード側のCSS変数(--chart-*)として定義し、charts.jsが読む。
+   体重=明るいラベンダー、Goal1=ローズピンク、Goal2=明るい青、BMI21=淡い金、LOWER LINE=淡いコーラル */
+.graph-card {
+  background: linear-gradient(135deg, rgba(52, 42, 138, 0.84), rgba(78, 62, 166, 0.78));
+  border-color: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  --chart-text: rgba(255, 255, 255, 0.9);
+  --chart-grid: rgba(255, 255, 255, 0.2);
+  --chart-line: #d9c8ff;
+  --chart-line-fill: rgba(217, 200, 255, 0.18);
+  --chart-goal1: #f6a9d1;
+  --chart-goal2: #9db4ff;
+  --chart-bmi21: #f2dc9c;
+  --chart-bmi20: #ffae9e;
+}
+.graph-card .card-title { color: #ffffff; margin-bottom: 0; }
+.graph-card .title-icon-svg { color: rgba(255, 255, 255, 0.85); }
+.graph-card .chart-empty-msg { color: rgba(255, 255, 255, 0.88); }
+
+.graph-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.chart-range-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.chart-range-tabs button {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 6px 9px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+}
+.chart-range-tabs button.is-active {
+  background: rgba(255, 255, 255, 0.9);
+  color: #3a2f86;
+  font-weight: 700;
+}
+.graph-card--empty .chart-range-tabs,
+.graph-card--empty .chart-legend { display: none; }
+
+/* 凡例は1行に収める。縦軸範囲外の目標は「名称 値↓」のバッジで示す */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+  margin-top: 5px;
+  font-size: 0.66rem;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.9);
+}
+.chart-legend:empty { display: none; }
+.cl-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.cl-sw { display: inline-block; width: 11px; height: 0; border-top: 2px solid var(--c); }
+.cl-sw.is-dashed { border-top-style: dashed; }
+.cl-badge {
+  white-space: nowrap;
+  padding: 0 5px;
+  border: 1px solid var(--c);
+  border-radius: 999px;
+  color: var(--c);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ 375px（≤699px）HOME 比較試作 ============
+   1024px以上には影響しない。下部カード配置(data-layout v1/v2)・配色(data-palette a/b)・
+   背景方式(data-bg page/fixed/top)はURLクエリで切り替えて比較する（ui.js renderHome）。
+   日本語見出しは375pxだけ（.t-en/.t-jp）。 */
+.t-jp { display: none; }
+.ttl-mix { display: none; }
+.home-tagline, .home-date { display: none; }
+
+@media (max-width: 699px) {
+  .t-en { display: none; }
+  .t-jp { display: inline; }
+
+  /* ---- 配色トークン（HOME限定）。A=淡いラベンダー＋濃い藍文字 / B=中間の紫＋白文字 ---- */
+  [data-screen="home"] {
+    --hp-card: linear-gradient(135deg, rgba(253, 250, 255, 0.86), rgba(214, 203, 242, 0.62));
+    --hp-ink: #2e2468;
+    --hp-ink-mute: #5b4f93;
+    --hp-accent-bar: linear-gradient(90deg, #9d8cf0, #e89bc4);
+    --hp-accent-btn: linear-gradient(135deg, #6f63d8, #a78bfa);
+    --hp-panel: linear-gradient(135deg, rgba(228, 221, 246, 0.68), rgba(184, 170, 226, 0.52));
+    --hp-panel-border: rgba(255, 255, 255, 0.6);
+    --hp-text: #2e2468;
+    --hp-text-mute: #5b4f93;
+    --hp-inset: rgba(255, 255, 255, 0.46);
+    --hp-track: rgba(46, 36, 104, 0.14);
+    --hp-blur: 7px;
+  }
+  [data-screen="home"][data-palette="b"] {
+    --hp-panel: linear-gradient(135deg, rgba(64, 50, 152, 0.8), rgba(100, 70, 165, 0.72));
+    --hp-panel-border: rgba(255, 255, 255, 0.34);
+    --hp-text: #ffffff;
+    --hp-text-mute: rgba(255, 255, 255, 0.84);
+    --hp-inset: rgba(255, 255, 255, 0.18);
+    --hp-track: rgba(255, 255, 255, 0.28);
+    --hp-blur: 8px;
+  }
+
+  /* ---- 背景：3方式の比較 ---- */
+  [data-screen="home"] .home-bg { left: -16px; right: -16px; }
+  /* fixed：画面に固定。HOMEの高さやスクロールに関係なく構図が一定 */
+  [data-screen="home"][data-bg="fixed"] .home-bg {
+    position: fixed;
+    inset: 0;
+    height: 100vh;
+    height: 100svh;
+  }
+  /* top：画像を幅いっぱい・原寸比で上端に置き、下端をページ背景へフェードさせる */
+  [data-screen="home"][data-bg="top"] .home-bg {
+    background-size: 100% auto;
+    background-position: 50% 0;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 540px, transparent 690px);
+    mask-image: linear-gradient(to bottom, #000 0, #000 540px, transparent 690px);
+  }
+  /* magic（既定）：新背景 home-bg-mobile-magic-v4.png（夜景・犬なし、原本1024×4096＝1:4）の仮配置。
+     v3は assets/body-garden/home-bg-mobile-magic-v3.png に保持（上のURLを差し替えれば戻せる）。
+     幅100%・上端基準・縦横比1:4固定（aspect-ratio）で引き伸ばし・反転コピーはしない。
+     375px幅の表示高さは約1500px。画像より長いページの下端は、画像下端の色(#2c2848)で埋める。
+     magic2：前回のv2背景（2:3、下端フェード＋単色延長）。比較用に保持 */
+  /* mainの上余白14pxぶん背景層を上へ伸ばし、その帯は夜空色で埋める（画像自体は14px下から開始） */
+  [data-screen="home"][data-bg="magic"] .home-bg,
+  [data-screen="home"][data-bg="magic2"] .home-bg {
+    top: -14px;
+    bottom: -132px; /* main下余白(20)＋body下のナビ用余白(104)＋最後のカードの下マージン(8)まで背景層を続ける */
+    background-image: none;
+    overflow: hidden; /* 画像が内容より長くても、ページのスクロール長を増やさない */
+  }
+  [data-screen="home"][data-bg="magic"] .home-bg {
+    background: linear-gradient(to bottom, #414370 0, #414370 14px, #2c2848 14px);
+  }
+  [data-screen="home"][data-bg="magic2"] .home-bg {
+    background: linear-gradient(to bottom, #2f2d55 0, #2f2d55 14px, #947097 14px);
+  }
+  [data-screen="home"][data-bg="magic"] .home-bg::after,
+  [data-screen="home"][data-bg="magic2"] .home-bg::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 0;
+    right: 0;
+    background-position: top center;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+  [data-screen="home"][data-bg="magic"] .home-bg::after {
+    aspect-ratio: 1024 / 4096;
+    background-image: url("../assets/body-garden/home-bg-mobile-magic-v4.png");
+  }
+  [data-screen="home"][data-bg="magic2"] .home-bg::after {
+    aspect-ratio: 2 / 3;
+    background-image: url("../assets/body-garden/home-bg-mobile-magic-v2.png");
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0, #000 80%, transparent 100%);
+  }
+  /* ---- 前景レイヤー（完成モック準拠。375px換算＝モック1024幅×0.366） ----
+     旧背景(page/fixed/top)は明るい／犬入りなので、以下は夜景の新背景(magic/magic2)のみ */
+
+  /* タイトル：ピルをやめ、背景に直接クリーム色の「Body Garden」（直立の明朝）。位置はモックの左上 x20,y20〜。
+     月の位置には合わせない。ブランドの花の紋は文字の右へ、モックの葉の飾りの位置に移す */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .home-title-bar {
+    gap: 6px;
+    margin: 6px 0 14px 4px;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    border-radius: 0;
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .home-title-bar .brand-icon {
+    order: 2;
+    width: 26px;
+    height: 26px;
+    align-self: flex-end;
+    filter: drop-shadow(0 1px 4px rgba(20, 10, 50, 0.5));
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .home-title-text {
+    font-style: normal;
+    font-size: 1.42rem;
+    line-height: 1.15;
+    letter-spacing: 0;
+    color: #fdf0dc;
+    text-shadow: 0 1px 8px rgba(20, 10, 50, 0.7), 0 0 2px rgba(20, 10, 50, 0.5);
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .ttl-up { display: none; }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .ttl-mix { display: inline; }
+
+  /* タグライン（タイトルの下、モックの y46〜58）と日付（モック右上 x305〜366・y7〜24）。
+     いずれも完成モックに存在する表示。日付は表示専用 */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .home-tagline {
+    display: block;
+    margin: -12px 0 12px 4px;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    color: rgba(253, 240, 220, 0.92);
+    text-shadow: 0 1px 6px rgba(20, 10, 50, 0.75);
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .home-date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    position: absolute;
+    z-index: 2;
+    top: 8px;
+    right: -9px;
+    text-align: right;
+    color: #fdf0dc;
+    text-shadow: 0 1px 6px rgba(20, 10, 50, 0.8), 0 0 2px rgba(20, 10, 50, 0.6);
+    pointer-events: none;
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hd-date { font-size: 0.76rem; line-height: 1.2; }
+  /* サブ文字は10px以上。明るいテラス（窓・茶器）の上でも読めるよう、影を二重にして文字を濃い縁で囲む */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hd-sub {
+    font-size: 0.66rem;
+    line-height: 1.3;
+    margin-top: 1px;
+    text-shadow: 0 0 3px rgba(20, 10, 50, 0.95), 0 1px 7px rgba(20, 10, 50, 0.9), 0 0 12px rgba(20, 10, 50, 0.6);
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hd-date {
+    text-shadow: 0 0 3px rgba(20, 10, 50, 0.95), 0 1px 7px rgba(20, 10, 50, 0.9), 0 0 12px rgba(20, 10, 50, 0.6);
+  }
+
+  /* 重なり順：背景 < 人物・エニシャ < 体重カード。カードが人物の左側を隠し、顔・カップはカード右に出す */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hero-main {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* 人物：モックでは体重カードの右隣、顔の中心 x≈289・頭頂 y≈90、幅約155px、画像右端でトリミング。
+     バストアップ（顔・髪・肩・ティーカップ）を枠でクリップし、下端はフェード */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hero-person {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    right: -9px;
+    top: 90px;
+    width: 162px;
+    height: 160px;
+    object-fit: cover;
+    object-position: 50% 0%;
+    pointer-events: none;
+    /* モックは腕・手元のティーカップまで見える。枠を少し伸ばし、フェードを下端の約20%に絞る */
+    -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+  }
+
+  /* エニシャ：モックではテーブル右端の石の上、人物の頭の上（x326〜366・幅約40px）。
+     読みやすさのため幅は約50pxにして、同じ位置に置く */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hero-enisha {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    right: -8px;
+    top: 48px;
+    width: 52px;
+    height: auto;
+    pointer-events: none;
+  }
+
+  /* ---- 装飾の調整（完成モック準拠。夜景の新背景のみ） ---- */
+
+  /* 下段カード：完成モックのクリーム白に近づける（淡いラベンダーの半透明からの変更） */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]):not([data-palette="b"]) {
+    --hp-panel: linear-gradient(135deg, rgba(253, 248, 249, 0.93), rgba(242, 232, 245, 0.89));
+    --hp-panel-border: rgba(255, 255, 255, 0.8);
+    --hp-inset: rgba(232, 222, 241, 0.62);
+  }
+
+  /* 体重カード左上の花束：モックではカード左上の角に白い花がはみ出す（約45×70px）。
+     文字の下（z-index:0）に置き、日数・体重の文字はその上に出す */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .hero-bouquet {
+    display: block;
+    --bouquet-h: 68px;
+    left: -26px;
+    top: -42px;
+    z-index: 0;
+  }
+
+  /* 注射カードの花瓶：モックでは右半分に大きな紫の花束と花瓶。右下に大きく置き、
+     Phase4のプレースホルダーは花瓶を避けて左に寄せる */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .injection-vase {
+    height: 98px;
+    right: -4px;
+    bottom: -8px;
+    opacity: 1;
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .injection-card .placeholder-box {
+    margin-right: 38px;
+  }
+
+  /* 体調カードの花飾り：既存の花束素材を右下の角に小さく添える（背景画像側の変更は不要） */
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card {
+    position: relative;
+    overflow: hidden;
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card::after {
+    content: "";
+    position: absolute;
+    right: -10px;
+    bottom: -14px;
+    width: 58px;
+    height: 74px;
+    background: url("../assets/body-garden/deco-weight-bouquet.png") center / contain no-repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card > * {
+    position: relative;
+    z-index: 1;
+  }
+  [data-screen="home"]:is([data-bg="magic"], [data-bg="magic2"]) .condition-card .placeholder-box {
+    margin-right: 28px;
+  }
+
+  /* ---- タイトル・体重カード（W2：左寄せ約256px、数値48px維持、右に庭を残す） ---- */
+  .home-title-text { color: var(--hp-ink); }
+  /* 体重カードの寸法：完成モック換算は幅約202px・高さ約117pxだが、モックの小項目は換算で約6pxになり
+     そのまま縮めると読めない。数値(48px)・BMI/体重変化/経過日数・目標表示はすべて残し、
+     「目標まで」と目標バブルを1行に、進捗バーをその下に置いて縦を詰める */
+  .hero-stat-card {
+    max-width: 232px;
+    margin-top: 76px;
+    position: relative;
+    padding: 12px 14px;
+    background: var(--hp-card);
+    color: var(--hp-ink);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 8px;
+    align-items: center;
+  }
+  .hero-stat-card > .hero-day-line { grid-column: 1 / -1; grid-row: 1; margin: 0 0 2px; }
+  .hero-stat-card > .hero-weight-row { grid-column: 1 / -1; grid-row: 2; }
+  .hero-stat-card .hero-progress-track { display: contents; }
+  .hero-stat-card > .remaining-line,
+  .hero-stat-card > .lower-line-badge { grid-column: 1; grid-row: 3; margin: 2px 0 0; }
+  .hero-stat-card > .remaining-line { white-space: nowrap; font-size: 0.82rem; }
+  .hero-stat-card .hero-goal-bubble { grid-column: 2; grid-row: 3; margin-top: 2px; }
+  .hero-stat-card .hero-progress-bar { grid-column: 1 / -1; grid-row: 4; margin: 6px 0 8px; }
+  .hero-stat-card > .stat-row { grid-column: 1 / -1; grid-row: 5; margin-top: 0; }
+  /* 背景に花が描かれているため、375pxでは花束装飾を外す（文字との重なり回避） */
+  .hero-bouquet { display: none; }
+  /* 変化バッジは「開始から○日目」の行の右端へ置き、体重数値の下で折り返さないようにする */
+  .hero-stat-card .hero-weight-row { flex-wrap: nowrap; }
+  .hero-stat-card .hero-change-badge { position: absolute; top: -26px; right: 0; margin: 0; }
+  .hero-stat-card .hero-day-line,
+  .hero-stat-card .hero-day-line strong { color: var(--hp-ink-mute); }
+  .hero-stat-card .current-weight { color: var(--hp-ink); }
+  .hero-stat-card .current-weight .unit { color: var(--hp-ink-mute); }
+  .hero-stat-card .hero-change-badge { background: rgba(214, 203, 242, 0.7); color: var(--hp-ink); }
+  .hero-stat-card .hero-progress-fill { background: var(--hp-accent-bar); }
+  .hero-stat-card .hero-progress-bar { background: var(--hp-track); }
+  .hero-stat-card .hero-goal-bubble { color: #b94a86; border-color: #f1b8d3; background: #fde9f2; }
+  .hero-stat-card .remaining-line { color: var(--hp-ink-mute); }
+  .hero-stat-card .stat { background: rgba(255, 255, 255, 0.62); padding: 4px 2px; }
+  .hero-stat-card .stat-row-mini { gap: 4px; }
+  .hero-stat-card .stat-label { color: var(--hp-ink-mute); }
+  .hero-stat-card .stat-value { color: var(--hp-ink); font-size: 0.95rem; }
+
+  /* ---- 体重グラフ：未記録は1行案内、記録ありは高さ150px（配色は両案とも淡色で視認性優先） ---- */
+  /* 体重グラフの寸法（配色は全幅共通のブロックを参照）。凡例・日付を整理したうえで高さを決める */
+  .graph-card { padding: 12px 14px 10px; }
+  .chart-wrap-lg { height: 128px; }
+
+  /* ---- 下部カード：V1（注射/Protein・体調/Goal）／V2（注射/体調・Protein全幅・Goal全幅） ---- */
+  .home-lower {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .home-lower > .home-grid-2col { display: contents; }
+  .home-lower .injection-card { grid-area: inj; }
+  .home-lower .protein-card { grid-area: pro; }
+  .home-lower .condition-card { grid-area: con; }
+  .home-lower .goal-status-card { grid-area: goal; }
+  /* V1（完成モック型・採用基準）：2カラムを維持し、カードの高さは内容に応じて独立させる
+     （stretchを解除。登録食品が増えても、左の注射カードに空のパネルが伸びない） */
+  .home-lower[data-layout="v1"] { grid-template-areas: "inj pro" "con goal"; align-items: start; }
+  .home-lower[data-layout="v2"] { grid-template-areas: "inj con" "pro pro" "goal goal"; }
+
+  .home-lower .card {
+    padding: 12px;
+    background: var(--hp-panel);
+    border-color: var(--hp-panel-border);
+    backdrop-filter: blur(var(--hp-blur));
+    color: var(--hp-text);
+  }
+  .home-lower .card-title { color: var(--hp-text); font-size: 0.85rem; margin-bottom: 6px; }
+  .home-lower .title-icon-svg { width: 22px; height: 22px; margin-right: 6px; color: var(--hp-text-mute); }
+  .home-lower .protein-value,
+  .home-lower .injection-value,
+  .home-lower .goal-status-mode { color: var(--hp-text); }
+  .home-lower .injection-value.muted,
+  .home-lower .goal-status-detail { color: var(--hp-text-mute); }
+  .home-lower .placeholder-box {
+    background: var(--hp-inset);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: var(--hp-text-mute);
+    padding: 8px;
+    font-size: 0.72rem;
+  }
+  .home-lower .progress-bar { background: var(--hp-track); }
+  .home-lower .progress-fill { background: var(--hp-accent-bar); }
+  .injection-vase { height: 70px; top: auto; bottom: -14px; right: -12px; opacity: 0.85; }
+
+  /* ---- Protein：チップ → 1行1操作のリスト行（ホエイ・登録食品全件・食事） ---- */
+  .protein-chip-row { flex-direction: column; flex-wrap: nowrap; gap: 6px; margin: 8px 0 6px; }
+  .chip-btn,
+  .protein-link-meal {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 4px 5px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: var(--hp-inset);
+    color: var(--hp-text);
+    text-align: left;
+    text-decoration: none;
+    font-size: 0.74rem;
+    font-weight: 500;
+  }
+  .chip-btn .protein-food-thumb,
+  .protein-link-meal .protein-food-thumb { width: 24px; height: 24px; margin-right: 4px; flex: none; }
+  .chip-btn .chip-name,
+  .protein-link-meal .chip-name { flex: 1; min-width: 0; line-height: 1.25; overflow-wrap: anywhere; }
+  .chip-btn .chip-plus,
+  .protein-link-meal::after {
+    flex: none;
+    min-width: 30px;
+    height: 32px;
+    padding: 0 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--hp-accent-btn);
+    color: #fff;
+    font-weight: 700;
+  }
+  .protein-link-meal::after { content: "＋"; }
+  .protein-link-row { gap: 0 12px; }
+  .protein-link-meal { order: -1; margin-bottom: 4px; }
+  .home-lower .protein-card .btn-text {
+    color: var(--hp-text-mute);
+    font-size: 0.72rem;
+    padding: 8px 2px;
+  }
+  .home-lower .protein-card .protein-link-meal { color: var(--hp-text); font-size: 0.74rem; padding: 4px 5px; }
+}
+
+/* ============ 1024px級（≥700px）HOME 夜景化・仮実装 ============
+   夜景の背景v4（home-bg-mobile-magic-v4.png、1024×4096）をデスクトップにも流用する。
+   data-bg="magic"（既定）のときだけ有効。?bg=page で従来の朝背景に戻る。
+   375px用ルール（max-width:699px）には触れない。
+   前景の位置・寸法は、完成モック（1024幅）の座標を「HOME幅＝100cqw」に比例させて置く。
+   cqw=HOME(.home)幅の1%。v4画像もHOME幅で表示するので、背景の月・湖・テラスと
+   前景の位置関係が、700〜1000pxでも崩れない。 */
+@media (min-width: 700px) {
+  [data-screen="home"][data-bg="magic"] {
+    container-type: inline-size;
+  }
+
+  /* ---- 背景：v4を幅100%・上端基準・縦横比1:4固定（引き伸ばし・反転なし）。
+     画像より下は画像下端の色(#2c2848)で続け、HOME外側（左右）は従来のページ背景のまま ---- */
+  [data-screen="home"][data-bg="magic"] .home-bg {
+    top: -14px;
+    bottom: -132px;
+    background-image: none;
+    background: linear-gradient(to bottom, #40406e 0, #40406e 14px, #2c2848 14px);
+    overflow: hidden;
+  }
+  [data-screen="home"][data-bg="magic"] .home-bg::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 0;
+    right: 0;
+    aspect-ratio: 1024 / 4096;
+    background: url("../assets/body-garden/home-bg-mobile-magic-v4.png") top center / 100% 100% no-repeat;
+  }
+
+  /* ---- Hero：モックの座標（1024幅）を cqw に換算して絶対配置。
+     体重カード上端 y230、人物 x600〜端・y245〜570、グラフ上端 y570 → Heroの高さは約55cqw（968pxで約530px） ---- */
+  [data-screen="home"][data-bg="magic"] .hero-section {
+    display: flow-root; /* カードの上マージンがHeroの外へ抜けないようにする */
+    position: relative;
+    min-height: 55cqw;
+    margin-bottom: 8px;
+  }
+  [data-screen="home"][data-bg="magic"] .hero-main {
+    display: block;
+    flex: none;
+    align-self: auto;
+  }
+
+  /* タイトル：モックの「Body Garden」（クリーム色・直立・ピルなし）。x55・y55〜120、タグラインy125〜、日付は右上 */
+  [data-screen="home"][data-bg="magic"] .home-title-bar {
+    position: absolute;
+    left: 5.4cqw;
+    top: 4.2cqw;
+    gap: 1cqw;
+    margin: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    border-radius: 0;
+    z-index: 2;
+  }
+  [data-screen="home"][data-bg="magic"] .home-title-bar .brand-icon {
+    order: 2;
+    width: 4.4cqw;
+    height: 4.4cqw;
+    min-width: 30px;
+    min-height: 30px;
+    align-self: flex-end;
+    filter: drop-shadow(0 1px 5px rgba(20, 10, 50, 0.5));
+  }
+  [data-screen="home"][data-bg="magic"] .home-title-text {
+    font-style: normal;
+    font-size: clamp(1.7rem, 5.3cqw, 3.4rem);
+    line-height: 1.1;
+    letter-spacing: 0;
+    color: #fdf0dc;
+    text-shadow: 0 1px 10px rgba(20, 10, 50, 0.7), 0 0 3px rgba(20, 10, 50, 0.5);
+  }
+  [data-screen="home"][data-bg="magic"] .ttl-up { display: none; }
+  [data-screen="home"][data-bg="magic"] .ttl-mix { display: inline; }
+  [data-screen="home"][data-bg="magic"] .home-tagline {
+    display: block;
+    position: absolute;
+    left: 6.3cqw;
+    top: 12cqw;
+    margin: 0;
+    font-size: clamp(0.78rem, 2cqw, 1.3rem);
+    letter-spacing: 0.16em;
+    color: rgba(253, 240, 220, 0.94);
+    text-shadow: 0 1px 8px rgba(20, 10, 50, 0.75);
+    z-index: 2;
+  }
+  [data-screen="home"][data-bg="magic"] .home-date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    position: absolute;
+    top: 1.5cqw;
+    right: 2.4cqw;
+    text-align: right;
+    color: #fdf0dc;
+    text-shadow: 0 0 3px rgba(20, 10, 50, 0.95), 0 1px 8px rgba(20, 10, 50, 0.9);
+    pointer-events: none;
+    z-index: 2;
+  }
+  [data-screen="home"][data-bg="magic"] .hd-date { font-size: clamp(0.85rem, 2.3cqw, 1.5rem); line-height: 1.2; }
+  [data-screen="home"][data-bg="magic"] .hd-sub { font-size: clamp(0.7rem, 1.3cqw, 0.9rem); line-height: 1.3; margin-top: 2px; }
+
+  /* 体重カード：モックは x48〜600・y230〜550（幅54cqw）。クリーム白、花束を避けて上3行の左に余白 */
+  [data-screen="home"][data-bg="magic"] .hero-stat-card {
+    width: 53.9cqw;
+    max-width: 100%;
+    margin: 22.4cqw 0 0;
+    padding: 2.6cqw 2.8cqw 2.4cqw;
+    background: linear-gradient(135deg, rgba(253, 248, 249, 0.94), rgba(242, 232, 245, 0.9));
+    border-color: rgba(255, 255, 255, 0.8);
+    color: #2e2468;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 1.2cqw;
+    align-items: center;
+  }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card > .hero-day-line { grid-column: 1 / -1; grid-row: 1; padding-left: 8cqw; margin: 0 0 0.4cqw; font-size: clamp(0.82rem, 1.5cqw, 1.05rem); color: #5b4f93; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card > .hero-day-line strong { color: #5b4f93; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card > .hero-weight-row { grid-column: 1 / -1; grid-row: 2; padding-left: 8cqw; flex-wrap: nowrap; align-items: center; gap: 1.4cqw; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .current-weight { font-size: clamp(2.9rem, 7.4cqw, 5.2rem); color: #2e2468; line-height: 1.05; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .current-weight .unit { color: #5b4f93; font-size: clamp(1.1rem, 2.4cqw, 1.7rem); }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .hero-change-badge { margin-top: 0; font-size: clamp(0.8rem, 1.6cqw, 1.05rem); background: rgba(214, 203, 242, 0.7); color: #2e2468; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .hero-progress-track { display: contents; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card > .remaining-line,
+  [data-screen="home"][data-bg="magic"] .hero-stat-card > .lower-line-badge { grid-column: 1; grid-row: 3; padding-left: 8cqw; margin: 0.8cqw 0 0; color: #5b4f93; font-size: clamp(0.9rem, 1.7cqw, 1.2rem); white-space: nowrap; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .hero-goal-bubble { grid-column: 2; grid-row: 3; margin-top: 0.8cqw; font-size: clamp(0.75rem, 1.4cqw, 1rem); color: #b94a86; border-color: #f1b8d3; background: #fde9f2; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .hero-progress-bar { grid-column: 1 / -1; grid-row: 4; margin: 1.2cqw 0; height: 12px; background: rgba(46, 36, 104, 0.14); }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .hero-progress-fill { background: linear-gradient(90deg, #9d8cf0, #e89bc4); }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card > .stat-row { grid-column: 1 / -1; grid-row: 5; margin-top: 0; gap: 0.8cqw; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .stat { background: rgba(255, 255, 255, 0.62); padding: 0.9cqw 0.4cqw; }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .stat-label { color: #5b4f93; font-size: clamp(0.7rem, 1.4cqw, 0.95rem); }
+  [data-screen="home"][data-bg="magic"] .hero-stat-card .stat-value { color: #2e2468; font-size: clamp(1.05rem, 2.7cqw, 1.9rem); }
+
+  /* 花束：モックはカード左上の角に大きな白い花（約18cqw高さ）。上3行の左余白に収める */
+  [data-screen="home"][data-bg="magic"] .hero-bouquet {
+    display: block;
+    --bouquet-h: 17cqw;
+    left: -2.2cqw;
+    top: -3cqw;
+    z-index: 0;
+  }
+
+  /* 人物：モックは x600〜画像右端・y245〜570（約41.4cqw×31.7cqw）、体重カードの右隣。
+     バストアップ（顔・髪・肩・ティーカップ）に枠でクリップし、下端をフェード */
+  [data-screen="home"][data-bg="magic"] .hero-person {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    right: 0;
+    top: 23.9cqw;
+    margin: 0;
+    width: 41.4cqw;
+    height: 31.7cqw;
+    object-fit: cover;
+    object-position: 50% 0%;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+  }
+
+  /* エニシャ：モックはテーブル右端の石の上（x890〜1000・y168〜240、約11cqw幅）、人物の頭の上 */
+  [data-screen="home"][data-bg="magic"] .hero-enisha {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    left: 86.6cqw;
+    right: auto;
+    top: 15.2cqw;
+    width: 11.2cqw;
+    height: auto;
+    pointer-events: none;
+  }
+
+  /* ---- カード：375pxで調整したクリーム白を、注射・Protein・体調・Goalにも展開（グラフは濃い青紫のまま） ---- */
+  [data-screen="home"][data-bg="magic"] .injection-card,
+  [data-screen="home"][data-bg="magic"] .protein-card,
+  [data-screen="home"][data-bg="magic"] .condition-card,
+  [data-screen="home"][data-bg="magic"] .goal-status-card {
+    background: linear-gradient(135deg, rgba(253, 248, 249, 0.93), rgba(242, 232, 245, 0.89));
+    border-color: rgba(255, 255, 255, 0.8);
+    color: #2e2468;
+  }
+  [data-screen="home"][data-bg="magic"] .injection-card .card-title,
+  [data-screen="home"][data-bg="magic"] .protein-card .card-title,
+  [data-screen="home"][data-bg="magic"] .condition-card .card-title,
+  [data-screen="home"][data-bg="magic"] .goal-status-card .card-title,
+  [data-screen="home"][data-bg="magic"] .protein-value,
+  [data-screen="home"][data-bg="magic"] .injection-value,
+  [data-screen="home"][data-bg="magic"] .goal-status-mode { color: #2e2468; }
+  [data-screen="home"][data-bg="magic"] .protein-card .progress-fill { background: linear-gradient(90deg, #9d8cf0, #e89bc4); }
+  [data-screen="home"][data-bg="magic"] .protein-card .chip-btn { background: rgba(232, 222, 241, 0.62); }
+
+  /* 注射カードの花瓶：モックは右半分に大きな花束と花瓶（カード高さの約55%）。プレースホルダーは左へ寄せる */
+  [data-screen="home"][data-bg="magic"] .injection-vase {
+    height: clamp(120px, 15.5cqw, 170px);
+    top: auto;
+    right: 0;
+    bottom: -6px;
+    opacity: 1;
+  }
+  [data-screen="home"][data-bg="magic"] .injection-card .placeholder-box { margin-right: clamp(80px, 12cqw, 130px); }
+
+  /* 体調カードの花飾り：既存の花束素材を右下の角に（紫の花穂は素材未制作のため暫定） */
+  [data-screen="home"][data-bg="magic"] .condition-card { position: relative; overflow: hidden; }
+  [data-screen="home"][data-bg="magic"] .condition-card::after {
+    content: "";
+    position: absolute;
+    right: -1cqw;
+    bottom: -2cqw;
+    width: 9cqw;
+    height: 11.5cqw;
+    background: url("../assets/body-garden/deco-weight-bouquet.png") center / contain no-repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+  [data-screen="home"][data-bg="magic"] .condition-card > * { position: relative; z-index: 1; }
+  [data-screen="home"][data-bg="magic"] .condition-card .placeholder-box { margin-right: clamp(40px, 6cqw, 70px); }
+
+  /* ---- ページ背景（HOME本体の左右の余白）：夜景HOMEが表示中のときだけ、中央の夜景に
+     つながる濃紺〜青紫にする。v4画像の左右端の平均色（縦方向）から取った段階色で、
+     画像の引き伸ばし・反転コピーはしない。記録・設定などの画面は従来のページ背景のまま ---- */
+  body:has([data-screen="home"][data-bg="magic"]:not([hidden])) {
+    background:
+      linear-gradient(180deg,
+        #36335b 0px, #2b2d4a 200px, #474380 390px, #3d3e7d 580px, #434475 770px,
+        #5e518c 880px, #7f5a8d 1000px, #a2658f 1100px, #b06a88 1200px, #7a5388 1320px, #3d3860 1560px)
+      #3d3860;
+  }
+
+  /* ---- ナビゲーション：完成モックの暗い浮遊型バー。5タブ・アイコン・ラベル・現在地表示・遷移・
+     タップ領域はそのまま、見た目だけを変える。夜景HOMEのときだけ（他画面は従来の淡いバー） ---- */
+  body:has([data-screen="home"][data-bg="magic"]:not([hidden])) nav.bottom-nav {
+    left: 50%;
+    right: auto;
+    bottom: 14px;
+    transform: translateX(-50%);
+    width: min(968px, calc(100% - 32px));
+    padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(46, 38, 92, 0.95), rgba(72, 58, 126, 0.93));
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 34px rgba(10, 6, 40, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  body:has([data-screen="home"][data-bg="magic"]:not([hidden])) nav.bottom-nav button {
+    color: rgba(214, 204, 244, 0.88);
+  }
+  body:has([data-screen="home"][data-bg="magic"]:not([hidden])) nav.bottom-nav button .nav-icon-svg {
+    color: rgba(214, 204, 244, 0.88);
+  }
+  body:has([data-screen="home"][data-bg="magic"]:not([hidden])) nav.bottom-nav button.is-active,
+  body:has([data-screen="home"][data-bg="magic"]:not([hidden])) nav.bottom-nav button.is-active .nav-icon-svg {
+    color: #f3d08f;
+  }
+}
+
+/* 広い画面（≥1100px）：HOME本体(968px)の左右端を、ページ背景へなじませる。
+   画像の幅は変えず、背景層の左右端だけを透過でフェードする（庭は中央が主役） */
+@media (min-width: 1100px) {
+  [data-screen="home"][data-bg="magic"] .home-bg {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%);
   }
 }

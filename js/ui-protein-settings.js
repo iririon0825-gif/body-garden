@@ -18,7 +18,7 @@ const ProteinSettingsUI = {
 
     el.innerHTML = `
       <section class="card">
-        <p class="card-title">${UI.titleIcon("iconProtein", "🥤")}Protein設定</p>
+        <p class="card-title">${UI.lineIcon("protein")}Protein設定</p>
 
         <p class="subsection-title">ホエイ商品</p>
         <ul class="master-list">

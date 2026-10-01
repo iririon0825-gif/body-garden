@@ -1,16 +1,23 @@
 // Body Garden — 体重グラフ（Chart.js）
 // 実測体重・Goal1/Goal2ライン・BMI21/BMI20相当体重ラインを重ねて描画する。
-// Phase2では全期間表示のみ（期間切替はPhase3以降、記録量が増えてから追加）。
+// HOMEのグラフは表示期間（直近7日／直近30日／全期間）ごとに縦軸の範囲と目盛り間隔を切り替える。
+// 期間の切替状態はメモリ上のみで、保存データ(localStorage)には書き込まない。
 
 const Charts = {
   _instances: {},
 
-  // canvasIdの要素に既存グラフがあれば破棄してから再描画する
-  // （HOME/記録画面のinnerHTML差し替えで毎回canvas要素が作り直されるため）
-  renderWeightChart(canvasId, state) {
+  // 将来、月経期／卵胞期／黄体期などの周期帯を背景に重ねるための入力口。
+  // [{ from: "YYYY-MM-DD", to: "YYYY-MM-DD", color: "rgba(...)" }] を入れると、
+  // 横軸（日単位）の位置に合わせて背景帯が描かれる。未使用時は何も描かない
+  bands: [],
+
+  // range: "7" | "30" | "all"
+  renderWeightChart(canvasId, state, range) {
     const canvas = document.getElementById(canvasId);
     const emptyMsg = document.getElementById(`${canvasId}-empty`);
+    const legendEl = document.getElementById(`${canvasId}-legend`);
     if (!canvas) return;
+    const card = canvas.closest(".graph-card");
 
     if (this._instances[canvasId]) {
       this._instances[canvasId].destroy();
@@ -22,67 +29,203 @@ const Charts = {
       .filter((r) => r.weight != null)
       .sort((a, b) => (a.date < b.date ? -1 : 1));
 
-    if (points.length === 0) {
+    const showMessage = (text, noRange) => {
       canvas.hidden = true;
-      if (emptyMsg) emptyMsg.hidden = false;
+      if (emptyMsg) {
+        emptyMsg.textContent = text;
+        emptyMsg.hidden = false;
+      }
+      if (legendEl) legendEl.innerHTML = "";
+      if (card) card.classList.toggle("graph-card--norange", !!noRange);
+    };
+
+    if (points.length === 0) {
+      showMessage("体重を記録するとグラフが表示されます", false);
       return;
     }
+
+    // --- 表示期間の日付列（日単位の連続した横軸。記録のない日は線を補間するだけで空ける） ---
+    const today = todayISODate();
+    const lastDate = points[points.length - 1].date;
+    const endDate = lastDate > today ? lastDate : today;
+    const period = range === "7" || range === "30" ? Number(range) : null;
+    const startDate = period ? addDays(today, -(period - 1)) : points[0].date;
+    const days = enumerateDays(startDate, period ? today : endDate);
+    const inWindow = points.filter((p) => p.date >= days[0] && p.date <= days[days.length - 1]);
+    if (inWindow.length === 0) {
+      showMessage("この期間の記録はありません", true);
+      return;
+    }
+    if (card) card.classList.remove("graph-card--norange");
     canvas.hidden = false;
     if (emptyMsg) emptyMsg.hidden = true;
 
-    const labels = points.map((p) => p.date);
-    const weightData = points.map((p) => p.weight);
+    const byDay = {};
+    inWindow.forEach((p) => (byDay[p.date] = p.weight));
+    const weightData = days.map((d) => (d in byDay ? byDay[d] : null));
 
+    // --- 目標・ガードレールの体重値 ---
+    const cardStyle = getComputedStyle(canvas);
+    const cv = (name, fallback) => cardStyle.getPropertyValue(name).trim() || fallback;
+    const goal1Weight = Calc.goalToWeightKg(goals.goal1, profile.heightCm);
+    const goal2Weight = goals.goal2 ? Calc.goalToWeightKg(goals.goal2, profile.heightCm) : null;
+    const bmi21Weight = Calc.weightForBmi(profile.bmiMaintenanceAlert, profile.heightCm);
+    const bmi20Weight = Calc.weightForBmi(profile.bmiLowerLine, profile.heightCm);
+    const guides = [
+      { label: "Goal1", short: "Goal1", value: goal1Weight, color: cv("--chart-goal1", "#d9a9ac"), dashed: false },
+      { label: "Goal2", short: "Goal2", value: goal2Weight, color: cv("--chart-goal2", "#b7a9d6"), dashed: false },
+      { label: `BMI${profile.bmiMaintenanceAlert}`, short: `BMI${profile.bmiMaintenanceAlert}`, value: bmi21Weight, color: cv("--chart-bmi21", "#e0c68a"), dashed: true },
+      { label: `BMI${profile.bmiLowerLine} LOWER LINE`, short: "LOWER LINE", badge: "LOWER", value: bmi20Weight, color: cv("--chart-bmi20", "#c08a8a"), dashed: true },
+    ].filter((g) => g.value != null);
+
+    // --- 縦軸の範囲と刻み ---
+    const weights = inWindow.map((p) => p.weight);
+    const axis = computeAxis(period, weights, [profile.startWeight, goal1Weight, goal2Weight]);
+
+    const inRange = (v) => v >= axis.min && v <= axis.max;
     const datasets = [
       {
         label: "体重",
         data: weightData,
-        borderColor: "#6fa89c",
-        backgroundColor: "rgba(111,168,156,0.15)",
-        pointRadius: 3,
+        borderColor: cv("--chart-line", "#6fa89c"),
+        backgroundColor: cv("--chart-line-fill", "rgba(111,168,156,0.15)"),
+        pointRadius: period === null && days.length > 45 ? 2 : 3,
         tension: 0.25,
+        spanGaps: true,
         fill: true,
       },
     ];
+    guides.filter((g) => inRange(g.value)).forEach((g) => {
+      datasets.push(flatLine(g.label, g.value, days.length, g.color, g.dashed));
+    });
 
-    const goal1Weight = Calc.goalToWeightKg(goals.goal1, profile.heightCm);
-    if (goal1Weight != null) {
-      datasets.push(flatLine("Goal1", goal1Weight, labels.length, "#d9a9ac"));
-    }
-    if (goals.goal2) {
-      const goal2Weight = Calc.goalToWeightKg(goals.goal2, profile.heightCm);
-      if (goal2Weight != null) {
-        datasets.push(flatLine("Goal2", goal2Weight, labels.length, "#b7a9d6"));
-      }
-    }
-
-    const bmi21Weight = Calc.weightForBmi(profile.bmiMaintenanceAlert, profile.heightCm);
-    if (bmi21Weight != null) {
-      datasets.push(flatLine(`BMI${profile.bmiMaintenanceAlert}`, bmi21Weight, labels.length, "#e0c68a", true));
-    }
-    const bmi20Weight = Calc.weightForBmi(profile.bmiLowerLine, profile.heightCm);
-    if (bmi20Weight != null) {
-      datasets.push(flatLine(`BMI${profile.bmiLowerLine} LOWER LINE`, bmi20Weight, labels.length, "#c08a8a", true));
+    // --- 凡例（1行）と、縦軸範囲外の目標バッジ ---
+    if (legendEl) {
+      const swatch = (color, dashed) =>
+        `<i class="cl-sw${dashed ? " is-dashed" : ""}" style="--c:${color}"></i>`;
+      const items = [`<span class="cl-item">${swatch(datasets[0].borderColor, false)}体重</span>`];
+      guides.forEach((g) => {
+        if (inRange(g.value)) {
+          items.push(`<span class="cl-item">${swatch(g.color, g.dashed)}${g.short}</span>`);
+        } else {
+          const arrow = g.value < axis.min ? "↓" : "↑";
+          items.push(
+            `<span class="cl-badge" style="--c:${g.color}" title="${g.short}（表示範囲外）">${g.badge || g.short} ${g.value.toFixed(1)}${arrow}</span>`
+          );
+        }
+      });
+      legendEl.innerHTML = items.join("");
     }
 
+    // 文字色・目盛線色もカード側のCSS変数から読む（未定義のカードはChart.jsの既定色）
+    Chart.defaults.color = cv("--chart-text", "#666");
+    Chart.defaults.borderColor = cv("--chart-grid", "rgba(0, 0, 0, 0.1)");
+
+    const spanDays = days.length;
     this._instances[canvasId] = new Chart(canvas.getContext("2d"), {
       type: "line",
-      data: { labels, datasets },
+      data: { labels: days, datasets },
+      plugins: [cycleBandsPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: "index", intersect: false },
+        layout: { padding: { top: 4, right: 6 } },
         plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } },
+          legend: { display: false },
+          cycleBands: { bands: this.bands },
+          tooltip: {
+            callbacks: {
+              title: (items) => (items.length ? shortDate(items[0].label, spanDays) : ""),
+              label: (item) => `${item.dataset.label}: ${Number(item.raw).toFixed(1)}kg`,
+            },
+          },
         },
         scales: {
-          y: { ticks: { callback: (v) => `${v}kg` } },
-          x: { ticks: { maxTicksLimit: 6 } },
+          y: {
+            min: axis.min,
+            max: axis.max,
+            ticks: {
+              stepSize: axis.step,
+              callback: (v) => `${Number(v).toFixed(axis.step < 1 ? 1 : 0)}kg`,
+            },
+          },
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: period === 7 ? 7 : 6,
+              callback(value) {
+                return shortDate(this.getLabelForValue(value), spanDays);
+              },
+            },
+          },
         },
       },
     });
   },
 };
+
+// 縦軸：7日=0.5kg刻み、30日=1kg刻み、全期間=開始体重・記録値・目標値を含めて自動調整。
+// 小さな変化を誇張しすぎないよう、期間ごとに最小の表示幅を確保する
+function computeAxis(period, weights, extraTargets) {
+  const lo = Math.min(...weights);
+  const hi = Math.max(...weights);
+  if (period === 7 || period === 30) {
+    const step = period === 7 ? 0.5 : 1;
+    const minSpan = period === 7 ? 2 : 4;
+    const pad = period === 7 ? 0.2 : 0.4;
+    let min = Math.floor((lo - pad) / step) * step;
+    let max = Math.ceil((hi + pad) / step) * step;
+    let flip = false;
+    while (max - min < minSpan - 1e-9) {
+      if (flip) min -= step;
+      else max += step;
+      flip = !flip;
+    }
+    return { min: round2(min), max: round2(max), step };
+  }
+  const all = weights.concat(extraTargets.filter((v) => v != null));
+  const aLo = Math.min(...all);
+  const aHi = Math.max(...all);
+  const rawStep = Math.max(aHi - aLo, 4) / 5;
+  const step = [0.5, 1, 2, 2.5, 5, 10].find((s) => s >= rawStep) || 10;
+  const min = Math.floor((aLo - step * 0.3) / step) * step;
+  const max = Math.ceil((aHi + step * 0.3) / step) * step;
+  return { min: round2(min), max: round2(max), step };
+}
+
+function round2(v) {
+  return Math.round(v * 100) / 100;
+}
+
+function parseISO(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function fmtISO(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function addDays(iso, n) {
+  const d = parseISO(iso);
+  d.setDate(d.getDate() + n);
+  return fmtISO(d);
+}
+function enumerateDays(startIso, endIso) {
+  const out = [];
+  for (let d = parseISO(startIso), end = parseISO(endIso); d <= end; d.setDate(d.getDate() + 1)) {
+    out.push(fmtISO(d));
+  }
+  return out;
+}
+
+// 年を省略した短い日付（9/26）。約1年を超える期間だけ「26/9」形式の年月表示にする
+function shortDate(iso, spanDays) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  if (spanDays > 400) return `${String(y).slice(2)}/${m}`;
+  return `${m}/${d}`;
+}
 
 function flatLine(label, value, length, color, dashed) {
   return {
@@ -95,3 +238,30 @@ function flatLine(label, value, length, color, dashed) {
     fill: false,
   };
 }
+
+// 周期帯（月経期・卵胞期・黄体期など）の背景描画。Charts.bandsが空なら何もしない
+const cycleBandsPlugin = {
+  id: "cycleBands",
+  beforeDatasetsDraw(chart, _args, opts) {
+    const bands = (opts && opts.bands) || [];
+    const labels = chart.data.labels || [];
+    if (!bands.length || !labels.length) return;
+    const { ctx, chartArea, scales } = chart;
+    const x = scales.x;
+    const half = labels.length > 1 ? (x.getPixelForValue(1) - x.getPixelForValue(0)) / 2 : 0;
+    bands.forEach((b) => {
+      const first = labels.findIndex((d) => d >= b.from && d <= b.to);
+      if (first < 0) return;
+      let last = first;
+      labels.forEach((d, i) => {
+        if (d >= b.from && d <= b.to) last = i;
+      });
+      const left = Math.max(chartArea.left, x.getPixelForValue(first) - half);
+      const right = Math.min(chartArea.right, x.getPixelForValue(last) + half);
+      ctx.save();
+      ctx.fillStyle = b.color;
+      ctx.fillRect(left, chartArea.top, right - left, chartArea.bottom - chartArea.top);
+      ctx.restore();
+    });
+  },
+};

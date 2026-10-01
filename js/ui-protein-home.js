@@ -3,6 +3,13 @@
 // 必要な操作だけをモーダルで開く軽量なUIにする。
 
 const ProteinHomeUI = {
+  // 食品サムネイル（仮配置）。未配置/読込失敗時は絵文字にフォールバックする
+  _foodThumb(assetKey, fallbackEmoji) {
+    const src = IMAGE_ASSETS[assetKey];
+    const fallback = fallbackEmoji ? `this.outerHTML='${fallbackEmoji}'` : "this.remove()";
+    return `<img class="protein-food-thumb" src="${src}" alt="" onerror="${fallback}" />`;
+  },
+
   cardInnerHtml(state) {
     const total = Calc.proteinTotalForDate(todayISODate(), state.proteinEntries);
     const target = state.profile.proteinTarget;
@@ -10,22 +17,24 @@ const ProteinHomeUI = {
     const foods = ProteinLogic.activeFoods(state);
 
     return `
-      <p class="card-title">${UI.titleIcon("iconProtein", "🥤")}TODAY'S PROTEIN</p>
+      <p class="card-title">${UI.lineIcon("protein")}<span class="t-en">TODAY'S PROTEIN</span><span class="t-jp">今日のたんぱく質</span></p>
       <p class="protein-value">${fmt(total, 1)} / ${target} g</p>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="protein-chip-row">
-        <button class="chip-btn" data-protein-action="whey">🥛 ホエイ ＋</button>
+        <button class="chip-btn" data-protein-action="whey">${this._foodThumb("foodWhey", "🥛")} <span class="chip-name">ホエイ</span> <span class="chip-plus">＋</span></button>
         ${foods
           .map(
             (f) =>
-              `<button class="chip-btn" data-protein-action="food-quick" data-food-id="${f.id}">${escapeHtml(f.name)} ＋1</button>`
+              `<button class="chip-btn" data-protein-action="food-quick" data-food-id="${f.id}">${
+                f.id === "food-oikos" ? this._foodThumb("foodOikos", "") + " " : ""
+              }<span class="chip-name">${escapeHtml(f.name)}</span> <span class="chip-plus">＋1</span></button>`
           )
           .join("")}
       </div>
       <div class="protein-link-row">
-        <button class="btn-text" data-protein-action="food-custom">数量を指定して追加</button>
-        <button class="btn-text" data-protein-action="add-meal">食事を追加</button>
-        <button class="btn-text" data-protein-action="view-today">今日の記録を見る</button>
+        <button class="btn-text protein-link-custom" data-protein-action="food-custom">数量を指定して追加</button>
+        <button class="btn-text protein-link-meal" data-protein-action="add-meal">${this._foodThumb("foodMeal", "")}<span class="chip-name">食事を追加</span></button>
+        <button class="btn-text protein-link-today" data-protein-action="view-today">今日の記録を見る</button>
       </div>
     `;
   },

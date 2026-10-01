@@ -1,12 +1,14 @@
 // Body Garden — Service Worker
 // CACHE_VERSIONはTonight Gardenと同様に手動運用（更新時にこの文字列を上げる）
-const CACHE_VERSION = "body-garden-v2";
+const CACHE_VERSION = "body-garden-v3";
 
 const PRECACHE_URLS = [
   "./",
   "index.html",
   "manifest.json",
   "css/style.css",
+  "assets/fonts/KaiseiDecol-400.woff2",
+  "assets/fonts/KaiseiDecol-500.woff2",
   "js/data.js",
   "js/calc.js",
   "js/storage.js",

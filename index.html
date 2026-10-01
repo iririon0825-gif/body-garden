@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Body Garden" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css?t=51" />
 </head>
 <body>
 <main>
@@ -28,7 +28,7 @@
 
   <section data-screen="composition" hidden>
     <div class="card">
-      <p class="card-title"><img class="title-icon" src="assets/body-garden/icon-composition.png" alt="" onerror="this.remove()" />体組成</p>
+      <p class="card-title"><span class="title-icon-slot" data-line-icon="composition" data-icon-class="title-icon-svg"></span>体組成</p>
       <div class="placeholder-box">Phase5で実装予定（詳細項目入力・画像読み取り＋確認画面）</div>
     </div>
   </section>
@@ -44,47 +44,38 @@
 
 <nav class="bottom-nav">
   <button data-nav-target="home">
-    <img class="nav-icon-img" src="assets/body-garden/icon-home.png" alt=""
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
-    <span class="nav-icon" hidden>🏠</span>HOME
+    <span class="nav-icon-slot" data-line-icon="home" data-icon-class="nav-icon-svg"></span>HOME
   </button>
   <button data-nav-target="records">
-    <img class="nav-icon-img" src="assets/body-garden/icon-record.png" alt=""
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
-    <span class="nav-icon" hidden>📊</span>記録
+    <span class="nav-icon-slot" data-line-icon="records" data-icon-class="nav-icon-svg"></span>記録
   </button>
   <button data-nav-target="injection">
-    <img class="nav-icon-img" src="assets/body-garden/icon-injection.png" alt=""
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
-    <span class="nav-icon" hidden>💉</span>注射
+    <span class="nav-icon-slot" data-line-icon="injection" data-icon-class="nav-icon-svg"></span>注射
   </button>
   <button data-nav-target="composition">
-    <img class="nav-icon-img" src="assets/body-garden/icon-composition.png" alt=""
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
-    <span class="nav-icon" hidden>🌿</span>体組成
+    <span class="nav-icon-slot" data-line-icon="composition" data-icon-class="nav-icon-svg"></span>体組成
   </button>
   <button data-nav-target="settings">
-    <img class="nav-icon-img" src="assets/body-garden/icon-settings.png" alt=""
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
-    <span class="nav-icon" hidden>⚙️</span>設定
+    <span class="nav-icon-slot" data-line-icon="settings" data-icon-class="nav-icon-svg"></span>設定
   </button>
 </nav>
 
 <div id="modal-root" class="modal-root" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="js/data.js"></script>
-<script src="js/calc.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/logic.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/ocr.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/protein-logic.js"></script>
-<script src="js/ui-settings.js"></script>
-<script src="js/ui-protein-settings.js"></script>
-<script src="js/ui-protein-home.js"></script>
-<script src="js/ui-records.js"></script>
-<script src="js/app.js"></script>
+<script src="js/icons.js?t=9"></script>
+<script src="js/data.js?t=21"></script>
+<script src="js/calc.js?t=9"></script>
+<script src="js/storage.js?t=9"></script>
+<script src="js/logic.js?t=9"></script>
+<script src="js/charts.js?t=32"></script>
+<script src="js/ocr.js?t=9"></script>
+<script src="js/ui.js?t=43"></script>
+<script src="js/protein-logic.js?t=9"></script>
+<script src="js/ui-settings.js?t=9"></script>
+<script src="js/ui-protein-settings.js?t=9"></script>
+<script src="js/ui-protein-home.js?t=22"></script>
+<script src="js/ui-records.js?t=9"></script>
+<script src="js/app.js?t=9"></script>
 </body>
 </html>
