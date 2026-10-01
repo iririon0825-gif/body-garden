@@ -3,7 +3,7 @@
 // すべて profile / goals / proteinProducts / registeredFoods に保持し、
 // UI側は必ずこれらを参照する。
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 // ============ 注射管理の定数 ============
 // 製剤規格（マンジャロ皮下注アテオス、各0.5mL）。出典: 日本イーライリリー電子添付文書
@@ -96,31 +96,70 @@ function nextSequentialId(list) {
   return maxId + 1;
 }
 
-// 体組成の詳細項目。weight 以外はすべて任意（null許容）。
-const EMPTY_BODY_COMPOSITION = {
-  bodyFatPct: null,
-  muscleMass: null,
-  waterPct: null,
-  bodyFatMass: null,
-  leanMass: null,
-  boneMass: null,
-  visceralFat: null,
-  proteinPct: null,
-  skeletalMuscleMass: null,
-  subcutaneousFat: null,
-  bodyAge: null,
-  bmr: null,
-};
+// 体組成の項目定義（16項目）。一括貼り付けの解析・プレビュー・バックアップ検証・後続のCSVが、すべてこれを参照する。
+// 並びは「登録用テキスト」の順（保存キーとCSVの列順もこれに合わせる）。
+//   key        : dailyRecords[].bodyComposition のキー（既存の12キーは名前を変えない）
+//   units      : 受け付ける単位（NFKC正規化・小文字化・空白除去のあとで照合）。unitRequired=true の項目は単位が無いと保存しない
+//   decimals   : 通常の小数の桁数（これより多い桁は警告。丸めない）
+//   hard       : 「明らかにあり得ない値」の範囲。外れたら保存しない
+//   soft       : 通常の範囲。外れても保存できるが、警告と本人の確認が必要（機種差・丸め方の違いがあるため）
+//   ※ hard / soft は入力ミスの検出用で、医学的な基準ではない。体重とBMIの hard は既存の VALIDATION_RANGES と同じ。
+const COMPOSITION_FIELDS = [
+  { key: "measuredWeight", label: "体重", aliases: [], unit: "kg", units: ["kg"], unitRequired: true, type: "number", decimals: 2, hard: [20, 250], soft: null, csv: "measuredWeightKg" },
+  { key: "bmi", label: "BMI", aliases: [], unit: "", units: ["", "kg/m2"], unitRequired: false, type: "number", decimals: 1, hard: [10, 60], soft: null, csv: "bmi" },
+  { key: "bodyFatPct", label: "体脂肪率", aliases: [], unit: "%", units: ["%"], unitRequired: true, type: "number", decimals: 1, hard: [0.1, 99.9], soft: [3, 60], csv: "bodyFatPct" },
+  { key: "heartRate", label: "心拍数", aliases: ["脈拍"], unit: "bpm", units: ["bpm", "回/分", "回", "拍/分", "拍"], unitRequired: true, type: "number", decimals: 0, hard: [20, 250], soft: [40, 180], csv: "heartRateBpm" },
+  { key: "muscleMass", label: "筋肉量", aliases: [], unit: "kg", units: ["kg"], unitRequired: true, type: "number", decimals: 2, hard: [1, 200], soft: [10, 100], csv: "muscleMassKg" },
+  { key: "bmr", label: "基礎代謝量", aliases: ["基礎代謝", "bmr"], unit: "kcal", units: ["kcal", "kcal/日"], unitRequired: true, type: "number", decimals: 0, hard: [300, 6000], soft: [800, 3500], csv: "bmrKcal" },
+  { key: "waterPct", label: "水分量", aliases: ["体水分率", "水分率"], unit: "%", units: ["%"], unitRequired: true, type: "number", decimals: 1, hard: [1, 99.9], soft: [30, 75], csv: "waterPct" },
+  { key: "bodyFatMass", label: "体脂肪量", aliases: [], unit: "kg", units: ["kg"], unitRequired: true, type: "number", decimals: 2, hard: [0.1, 200], soft: [2, 100], csv: "bodyFatMassKg" },
+  { key: "leanMass", label: "除脂肪体重", aliases: ["除脂肪量"], unit: "kg", units: ["kg"], unitRequired: true, type: "number", decimals: 2, hard: [5, 250], soft: [20, 120], csv: "leanMassKg" },
+  { key: "boneMass", label: "骨量", aliases: ["推定骨量"], unit: "kg", units: ["kg"], unitRequired: true, type: "number", decimals: 2, hard: [0.1, 20], soft: [1, 6], csv: "boneMassKg" },
+  { key: "visceralFat", label: "内臓脂肪", aliases: ["内臓脂肪レベル"], unit: "", units: ["", "レベル", "level", "lv"], unitRequired: false, type: "number", decimals: 1, hard: [0, 100], soft: [1, 30], csv: "visceralFatLevel" },
+  { key: "proteinPct", label: "タンパク質率", aliases: ["タンパク質", "たんぱく質率"], unit: "%", units: ["%"], unitRequired: true, type: "number", decimals: 1, hard: [0.1, 99.9], soft: [8, 25], csv: "proteinPct" },
+  { key: "skeletalMuscleMass", label: "骨格筋量", aliases: [], unit: "kg", units: ["kg"], unitRequired: true, type: "number", decimals: 2, hard: [1, 150], soft: [10, 60], csv: "skeletalMuscleMassKg" },
+  { key: "subcutaneousFat", label: "皮下脂肪", aliases: ["皮下脂肪率"], unit: "%", units: ["%"], unitRequired: true, type: "number", decimals: 1, hard: [0.1, 99.9], soft: [5, 50], csv: "subcutaneousFatPct" },
+  { key: "bodyAge", label: "体内年齢", aliases: ["体年齢"], unit: "歳", units: ["歳", "才", ""], unitRequired: false, type: "number", decimals: 0, hard: [5, 120], soft: [15, 80], csv: "bodyAge" },
+  { key: "bodyType", label: "ボディタイプ", aliases: ["体型"], unit: "", units: [""], unitRequired: false, type: "string", maxLen: 20, csv: "bodyType" },
+];
+
+// 一括貼り付けの入力の上限（巨大入力の抑止）
+const COMPOSITION_TEXT_MAX_CHARS = 5000;
+const COMPOSITION_TEXT_MAX_LINES = 80;
+const COMPOSITION_TEXT_MAX_LINE_CHARS = 200;
+
+// ボディタイプ（文字列）の妥当性。解析（一括貼り付け）とバックアップ検証が共通で使う。
+//   1〜20字。制御文字・書式文字、HTMLに使われる文字（< > & " ' `）を含まない。
+//   先頭が = + - @ のものは不可（後で作るCSVを表計算ソフトで開いたときに、数式として実行されるのを防ぐ）
+function isValidBodyType(v) {
+  if (typeof v !== "string") return false;
+  const len = [...v].length;
+  if (len < 1 || len > 20) return false;
+  if (/[\p{Cc}\p{Cf}]/u.test(v)) return false;
+  if (/[<>&"'`]/.test(v)) return false;
+  if (/^[=+\-@]/.test(v)) return false;
+  return true;
+}
+
+// 体組成の詳細項目（16項目）。すべて任意（null許容）。bodyType だけが文字列、ほかは数値。
+//   measuredWeight = 体組成計が表示した体重（dailyRecords.weight＝その日の体重とは別。HOME・グラフ・Goalは weight を使う）
+//   bmi            = 体組成計が表示したBMI（測定の記録。HOME・Goal・ガードレールの判定には使わず、Calc.bmi を使う）
+const EMPTY_BODY_COMPOSITION = Object.fromEntries(COMPOSITION_FIELDS.map((f) => [f.key, null]));
 
 // dailyRecords は「1日1回の身体スナップショット」の要約のみを持つ。
 // Protein・体調は1日に複数回記録されうるため、別テーブル（proteinEntries /
 // conditionEntries）の個別イベントとして持ち、dailyRecordsには含めない。
 // BMI / changeKg / changePct / elapsedDays は保存せず calc.js で都度算出する。
+//
+// compositionMeta（v6）: 体組成を一括貼り付けで取り込んだ記録のメモ。無い記録は null とみなす。
+//   { measuredTime:"HH:MM"|null, source:"paste", formatVersion:1, importedAt:ISO, updatedAt:ISO,
+//     mixed: 2回以上の測定の値が混ざっている }
 function createEmptyDailyRecord(date) {
   return {
     date, // "YYYY-MM-DD"
     weight: null,
     bodyComposition: { ...EMPTY_BODY_COMPOSITION },
+    compositionMeta: null,
     comment: "",
   };
 }

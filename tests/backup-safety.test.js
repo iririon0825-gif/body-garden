@@ -43,7 +43,7 @@ test("復元に失敗しても、以前の退避の世代は変わらない", ()
 
 test("復元・戻す: 保存済みのデータが新しい版なら上書きしない", () => {
   const env = loadEnv();
-  const newer = JSON.stringify({ schemaVersion: 7, future: true });
+  const newer = JSON.stringify({ schemaVersion: 8, future: true });
   env.ls.setItem(env.STORAGE_KEY, newer);
   env.ls.setCalls.length = 0;
   assert.equal(env.Backup.applyRestore(sampleState(env)).code, "NEWER_STORED");
@@ -59,7 +59,7 @@ test("復元後の保存データは schemaVersion が先頭の項目になる",
   const s = sampleState(env);
   const reordered = { profile: s.profile, ...s }; // 先頭が schemaVersion でない形
   assert.equal(env.Backup.applyRestore(reordered).ok, true);
-  assert.match(env.ls.getItem(env.STORAGE_KEY), /^\{"schemaVersion":5,/);
+  assert.match(env.ls.getItem(env.STORAGE_KEY), /^\{"schemaVersion":6,/);
 });
 
 // ============ ストレージの安全策 ============
@@ -71,7 +71,7 @@ test("読み込み: 壊れたデータの退避に失敗したら、初期状態
   const s = env.Storage.load();
   assert.equal(env.Storage.readOnly, true);
   assert.equal(env.Storage.readOnlyReason, "corruptBackupFailed");
-  assert.equal(s.schemaVersion, 5, "メモリ上の初期状態で起動できる");
+  assert.equal(s.schemaVersion, 6, "メモリ上の初期状態で起動できる");
   assert.equal(env.ls.getItem(env.STORAGE_KEY), "{壊れている", "元のデータは消されない");
 });
 

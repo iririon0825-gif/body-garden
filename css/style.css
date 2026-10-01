@@ -1720,3 +1720,35 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
     mask-image: linear-gradient(to right, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%);
   }
 }
+
+/* ============ 体組成（体組成タブ：一括貼り付け登録） ============ */
+.comp-note { font-size: 0.82rem; line-height: 1.7; color: var(--text-lo); margin: 0 0 10px; }
+.comp-sub { font-size: 0.8rem; line-height: 1.7; color: var(--text-lo); margin: 0 0 8px; }
+.comp-status { font-size: 0.85rem; line-height: 1.6; color: var(--teal); font-weight: 700; margin: 0 0 10px; }
+.comp-textarea { min-height: 150px; font-size: 0.8rem; }
+.comp-spec { min-height: 260px; }
+.comp-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.comp-errors { margin-bottom: 8px; }
+.comp-table-wrap { overflow-x: auto; margin: 0 0 12px; }
+.comp-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.comp-table th, .comp-table td { padding: 5px 4px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); vertical-align: middle; text-align: left; }
+.comp-table thead th { font-size: 0.72rem; color: var(--text-lo); font-weight: 700; }
+.comp-table tbody th { font-weight: 500; }
+.comp-num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.comp-row-conflict td, .comp-row-conflict th { background: rgba(250, 231, 236, 0.45); }
+.comp-msg td { font-size: 0.72rem; color: var(--text-lo); border-bottom: none; padding-top: 0; }
+.comp-chip { display: inline-block; font-size: 0.68rem; font-weight: 700; line-height: 1.6; padding: 0 7px; border-radius: 999px; white-space: nowrap; }
+.comp-chip-ok { background: rgba(80, 160, 140, 0.16); color: #2f7566; }
+.comp-chip-warn { background: rgba(214, 160, 70, 0.2); color: #8a5a10; }
+.comp-chip-bad { background: rgba(190, 80, 110, 0.14); color: #a1405f; }
+.comp-chip-muted { background: rgba(0, 0, 0, 0.06); color: var(--text-lo); }
+.comp-same { font-size: 0.7rem; color: var(--text-lo); }
+.comp-ow { display: inline-flex; align-items: center; gap: 3px; font-size: 0.75rem; white-space: nowrap; }
+.comp-weight { margin: 0 0 12px; padding: 10px 12px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.5); border: 1px solid var(--card-border); }
+.comp-ack { margin: 8px 0; }
+.comp-hlist { list-style: none; margin: 0; padding: 0; }
+.comp-hrow { padding: 8px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.comp-hmain { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; grid-column: 1; }
+.comp-hsub { font-size: 0.76rem; color: var(--text-lo); grid-column: 1; }
+.comp-hactions { grid-column: 2; grid-row: 1 / span 2; }
+.comp-detail { margin-bottom: 10px; }

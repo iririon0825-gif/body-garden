@@ -244,6 +244,21 @@ const MIGRATIONS = {
     state.schemaVersion = 5;
     return state;
   },
+
+  // v5: bodyComposition は12キーで、compositionMeta は無い。
+  // v6: 体組成の一括貼り付け登録（16項目）に対応。bodyComposition に heartRate / bmi / bodyType / measuredWeight を足し、
+  //     compositionMeta を新設する。既存の値は1つも変えず、足りないキーを null で補うだけ（冪等）。
+  //     体重・注射・在庫・Protein などには触れない。
+  5: (state) => {
+    for (const r of Array.isArray(state.dailyRecords) ? state.dailyRecords : []) {
+      if (!r || typeof r !== "object") continue;
+      const bc = r.bodyComposition && typeof r.bodyComposition === "object" && !Array.isArray(r.bodyComposition) ? r.bodyComposition : {};
+      r.bodyComposition = { ...EMPTY_BODY_COMPOSITION, ...bc };
+      if (r.compositionMeta === undefined) r.compositionMeta = null;
+    }
+    state.schemaVersion = 6;
+    return state;
+  },
 };
 
 const Storage = {

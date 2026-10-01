@@ -276,7 +276,7 @@ const BackupUI = {
     const rows = Backup.COUNT_KEYS.map(
       (k) =>
         `<tr><th scope="row">${this.COUNT_LABELS[k]}</th><td>${s.current ? s.current[k] : "—"} 件</td><td>${s.incoming[k]} 件</td></tr>`
-    ).join("");
+    ).join("") + `<tr><th scope="row">体組成のある日</th><td>${s.compositionDays && s.compositionDays.current !== null ? s.compositionDays.current : "—"} 日</td><td>${s.compositionDays ? s.compositionDays.incoming : 0} 日</td></tr>`;
     const warnings = result.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("");
     const exported = result.envelope.exportedAt ? this._fmtTs(result.envelope.exportedAt) : "不明";
     UI.showModal(`

@@ -58,7 +58,7 @@ const UI = {
     if (screenName === "records") RecordsUI.render(this.state);
     if (screenName === "injection" && typeof InjectionUI !== "undefined") InjectionUI.render(this.state);
     if (screenName === "maintenance-prep") this.renderMaintenancePrep();
-    // composition は Phase5で実装
+    if (screenName === "composition" && typeof CompositionUI !== "undefined") CompositionUI.render(this.state);
   },
 
   // ============ モーダル基盤 ============

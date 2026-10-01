@@ -21,20 +21,24 @@ function v4Raw(overrides = {}) {
   });
 }
 
-test("v4（注射データなし）→ v5: 定例スケジュールが追加され、他のデータは変わらない。移行前のデータが退避される", () => {
+test("v4（注射データなし）→ v6: 定例スケジュールが追加され、他のデータは変わらない。移行前のデータが退避される", () => {
   const env = loadEnv();
   const raw = v4Raw();
   env.ls.setItem(env.STORAGE_KEY, raw);
   const s = env.Storage.load();
-  assert.equal(s.schemaVersion, 5);
+  assert.equal(s.schemaVersion, 6);
   assert.deepEqual(clone(s.injectionSchedule), { regular: null, baseDoseMg: null, history: [] });
   assert.deepEqual(clone(s.injections), []);
   const before = JSON.parse(raw);
-  for (const k of ["profile", "goals", "dailyRecords", "proteinProducts", "registeredFoods", "guardrails", "ui"]) {
+  for (const k of ["profile", "goals", "proteinProducts", "registeredFoods", "guardrails", "ui"]) {
     assert.deepEqual(clone(s[k]), before[k], `${k} は変わらない`);
   }
+  // 体重の記録は変わらない（体組成の欄が16キーに広がり、compositionMeta が追加されるだけ）
+  assert.equal(s.dailyRecords.length, 1);
+  assert.equal(s.dailyRecords[0].weight, before.dailyRecords[0].weight);
+  assert.equal(s.dailyRecords[0].date, before.dailyRecords[0].date);
   assert.equal(env.ls.getItem(`${env.STORAGE_KEY}.preMigration.v4`), raw, "移行前の生データを退避");
-  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 5);
+  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 6);
 });
 
 test("v4（既存の注射データあり）→ v5: 値を変えずに引き継ぎ、kind は legacy になる", () => {
@@ -87,14 +91,14 @@ test("移行前の退避に失敗したら、通常の起動で退避なしの�
   assert.ok(env.ls.setCalls.every((k) => k !== env.STORAGE_KEY), "本体キーへの書き込み呼び出しが0回");
 });
 
-test("新しい版(v6)のデータは、v5のアプリで読み取り専用になり書き換えられない", () => {
+test("新しい版(v7)のデータは、v6のアプリで読み取り専用になり書き換えられない", () => {
   const env = loadEnv();
-  const raw = JSON.stringify({ schemaVersion: 6, injections: [], future: true });
+  const raw = JSON.stringify({ schemaVersion: 7, injections: [], future: true });
   env.ls.setItem(env.STORAGE_KEY, raw);
   env.Storage.load();
   assert.equal(env.Storage.readOnly, true);
   assert.equal(env.Storage.readOnlyReason, "newerSchema");
-  assert.equal(env.Storage.save({ schemaVersion: 5 }), false);
+  assert.equal(env.Storage.save({ schemaVersion: 6 }), false);
   assert.equal(env.ls.getItem(env.STORAGE_KEY), raw);
 });
 
@@ -125,11 +129,11 @@ test("バックアップ: v4 のファイルは v5 へ変換して取り込め�
   const e = { app: "body-garden", kind: "full-backup", formatVersion: 1, schemaVersion: 4, exportedAt: "2026-10-01T00:00:00Z", counts: env.Backup.counts(v4), state: v4 };
   const r = env.Backup.parse(JSON.stringify(e), null);
   assert.equal(r.ok, true, JSON.stringify(r));
-  assert.equal(r.state.schemaVersion, 5);
+  assert.equal(r.state.schemaVersion, 6);
   assert.equal(r.state.injections[0].kind, "legacy");
   assert.equal(r.summary.migrated, true);
   assert.equal(env.Backup.applyRestore(r.state).ok, true);
-  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 5);
+  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 6);
 });
 
 test("バックアップ: 注射データの不正（状態・種別・日付・時刻・曜日・履歴）は拒否する", () => {

@@ -236,6 +236,13 @@ const Backup = {
     };
   },
 
+  // 体組成が1項目でも入っている日の数（確認画面の表示用）
+  _compositionDays(state) {
+    return (Array.isArray(state.dailyRecords) ? state.dailyRecords : []).filter(
+      (r) => r && r.bodyComposition && typeof r.bodyComposition === "object" && Object.values(r.bodyComposition).some((v) => v !== null && v !== undefined)
+    ).length;
+  },
+
   summarize(candidate, currentState, fileVersion) {
     const dates = (candidate.dailyRecords || []).map((r) => r.date).sort();
     return {
@@ -244,6 +251,7 @@ const Backup = {
       migrated: fileVersion !== SCHEMA_VERSION,
       incoming: this.counts(candidate),
       current: currentState ? this.counts(currentState) : null,
+      compositionDays: { incoming: this._compositionDays(candidate), current: currentState ? this._compositionDays(currentState) : null },
       range: dates.length > 0 ? { from: dates[0], to: dates[dates.length - 1] } : null,
     };
   },
@@ -353,6 +361,7 @@ const Backup = {
     };
 
     // dailyRecords
+    const compositionByKey = typeof COMPOSITION_FIELDS !== "undefined" ? Object.fromEntries(COMPOSITION_FIELDS.map((f) => [f.key, f])) : {};
     const daily = list("dailyRecords");
     const dates = new Set();
     daily.forEach((r, i) => {
@@ -367,8 +376,37 @@ const Backup = {
       }
       if (r.comment !== undefined && !str(r.comment, this.LIMITS.text)) err(`dailyRecords[${i}].comment が不正です`);
       if (r.bodyComposition !== undefined) {
-        if (!isObj(r.bodyComposition)) err(`dailyRecords[${i}].bodyComposition が不正です`);
-        else for (const [k, v] of Object.entries(r.bodyComposition)) if (!numOrNull(v)) err(`dailyRecords[${i}].bodyComposition.${String(k).slice(0, 30)} が数値ではありません`);
+        if (!isObj(r.bodyComposition)) {
+          err(`dailyRecords[${i}].bodyComposition が不正です`);
+        } else {
+          for (const [k, v] of Object.entries(r.bodyComposition)) {
+            const f = compositionByKey[k];
+            const where = `dailyRecords[${i}].bodyComposition.${String(k).slice(0, 30)}`;
+            if (f && f.type === "string") {
+              // ボディタイプ: 文字列（20字以内。制御文字・HTML用の文字・先頭の = + - @ は不可）
+              if (!(v === null || (typeof isValidBodyType === "function" && isValidBodyType(v)))) err(`${where} が不正です`);
+            } else if (!numOrNull(v)) {
+              err(`${where} が数値ではありません`);
+            } else if (f && num(v) && f.hard && (v < f.hard[0] || v > f.hard[1])) {
+              warn(`${where} が通常あり得る範囲外です（${r.date}）`); // 取り込みは止めず、警告にとどめる
+            }
+          }
+        }
+      }
+      // compositionMeta: 一括貼り付けで取り込んだ記録のメモ（新設のため、知らない項目は拒否する）
+      if (r.compositionMeta !== undefined && r.compositionMeta !== null) {
+        const mt = r.compositionMeta;
+        const mp = `dailyRecords[${i}].compositionMeta`;
+        if (!isObj(mt)) {
+          err(`${mp} が不正です`);
+        } else {
+          for (const k of Object.keys(mt)) if (!["measuredTime", "source", "formatVersion", "importedAt", "updatedAt", "mixed"].includes(k)) err(`${mp} に未知の項目があります`);
+          if (!time(mt.measuredTime === undefined ? null : mt.measuredTime)) err(`${mp}.measuredTime が時刻(HH:MM)ではありません`);
+          if (!oneOf(mt.source, ["paste"])) err(`${mp}.source が不正です`);
+          if (!(Number.isInteger(mt.formatVersion) && mt.formatVersion >= 1 && mt.formatVersion <= 99)) err(`${mp}.formatVersion が不正です`);
+          if (!ts(mt.importedAt) || !ts(mt.updatedAt)) err(`${mp} の日時が不正です`);
+          if (typeof mt.mixed !== "boolean") err(`${mp}.mixed が真偽値ではありません`);
+        }
       }
     });
 
