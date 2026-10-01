@@ -272,10 +272,13 @@ test("エスケープ: メモ・症状・時刻・日付に入っていたタグ
   ui._view = "edit";
   ui._edit = ui._detailFromEntry(s.conditionEntries[0]);
   const eh = ui._detailHtml(s);
+  // 顔アイコン自体の <img src="assets/body-garden/condition-*.png" ...> は正規の表示なので許容し、
+  // 貼り付け由来の <img src=x onerror=...> だけが出ていないことを確認する
+  const evilImg = /<img src=x/;
   assert.match(eh, /&lt;img/, "編集フォームの値もエスケープされる");
-  assert.doesNotMatch(eh, /<img/);
+  assert.doesNotMatch(eh, evilImg);
   for (const html of [home, dh]) {
-    assert.doesNotMatch(html, /<img/);
+    assert.doesNotMatch(html, evilImg);
     assert.doesNotMatch(html, /<b>x/);
     assert.doesNotMatch(html, /<i>/);
   }
@@ -383,13 +386,41 @@ test("記録タブ: 編集中の記録が別の操作で変わった・消えた
 
 test("顔アイコン: 画像が未設定の間は枠と文字ラベルだけ。パスを設定すると枠の中に img が入る（絵文字は使わない）", () => {
   const { env, ui, s } = setup();
+  const assets = env.get("CONDITION_FACE_ASSETS");
+  const saved = { ...assets };
+  // 未設定（null）の場合のフォールバック表示を確認
+  assets.none = null;
+  assets.mild = null;
+  assets.moderate = null;
   let html = card(ui, s);
   assert.match(html, /class="cond-face" data-face="none" aria-hidden="true"><\/span>/);
   assert.doesNotMatch(html, /<img/);
   assert.doesNotMatch(html, /[\u{1F300}-\u{1FAFF}☀-➿]/u, "絵文字を使わない");
-  env.get("CONDITION_FACE_ASSETS").none = "assets/body-garden/face-none.png";
+  // 1件だけ設定した場合
+  assets.none = "assets/body-garden/face-none.png";
   html = card(ui, s);
   assert.match(html, /<span class="cond-face" data-face="none"[^>]*><img src="assets\/body-garden\/face-none.png" alt="" onerror="this.remove\(\)" \/><\/span>/);
+  Object.assign(assets, saved);
+});
+
+test("顔アイコン: 正式素材3種（none/mild/moderate）が設定済みで、HOME・記録タブの3択とも img で表示される", () => {
+  const { env, ui, s } = setup();
+  const assets = env.get("CONDITION_FACE_ASSETS");
+  assert.equal(assets.none, "assets/body-garden/condition-none.png");
+  assert.equal(assets.mild, "assets/body-garden/condition-mild.png");
+  assert.equal(assets.moderate, "assets/body-garden/condition-moderate.png");
+  const home = card(ui, s);
+  for (const [lv, path] of Object.entries(assets)) {
+    const re = new RegExp(`data-cond-level="${lv}"[^>]*><span class="cond-face" data-face="${lv}"[^>]*><img src="${path.replace(/\//g, "\\/")}" alt="" onerror="this.remove\\(\\)" />`);
+    assert.match(home, re, `HOME: ${lv}`);
+  }
+  ui._view = "new";
+  const detail = ui._detailHtml(s);
+  for (const [lv, path] of Object.entries(assets)) {
+    const re = new RegExp(`data-cond-dlevel="${lv}"[^>]*><span class="cond-face" data-face="${lv}"[^>]*><img src="${path.replace(/\//g, "\\/")}" alt="" onerror="this.remove\\(\\)" />`);
+    assert.match(detail, re, `記録タブ: ${lv}`);
+  }
+  assert.doesNotMatch(home + detail, /[\u{1F300}-\u{1FAFF}☀-➿]/u, "絵文字を使わない");
 });
 
 test("医療判断を示唆する文言（診断・治療・受診・危険・注意）を、画面に出さない。注意書きは「医療の判断や診断ではありません」", () => {

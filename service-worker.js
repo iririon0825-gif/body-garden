@@ -11,15 +11,22 @@
 // オフライン用の画面一式は、install のときに（HTML と js/css を同時に）入れ替わる。
 // 公開のたびに、このファイルの CACHE_VERSION を上げること（上げないと install が走らず、オフライン用の一式が更新されない）。
 
-const CACHE_VERSION = "body-garden-v13";
+const CACHE_VERSION = "body-garden-v14";
 
-// index.html から取れないもの（HTML自身・マニフェスト・フォント）
+// index.html から取れないもの（HTML自身・マニフェスト・フォント・PWAアイコン・体調の顔アイコン）
 const STATIC_URLS = [
   "./",
   "index.html",
   "manifest.json",
   "assets/fonts/KaiseiDecol-400.woff2",
   "assets/fonts/KaiseiDecol-500.woff2",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+  "icons/icon-maskable-512.png",
+  "icons/apple-touch-icon-180.png",
+  "assets/body-garden/condition-none.png",
+  "assets/body-garden/condition-mild.png",
+  "assets/body-garden/condition-moderate.png",
 ];
 
 // 外部ライブラリ（オフラインでもグラフを描くため）。取得できなくてもインストールは失敗させない

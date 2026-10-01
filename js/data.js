@@ -335,7 +335,11 @@ const IMAGE_ASSETS = {
 // 画像ができたら、ここにパスを入れるだけで枠の中に表示される（例: "assets/body-garden/face-none.png"）。
 // 未設定・読み込めないときは、固定の枠と文字ラベルだけを表示する。絵文字や仮のイラストで代用しない。
 // 画像を足すときは、オフラインで表示できるよう service-worker.js の STATIC_URLS にも足し、CACHE_VERSION を上げる。
-const CONDITION_FACE_ASSETS = { none: null, mild: null, moderate: null };
+const CONDITION_FACE_ASSETS = {
+  none: "assets/body-garden/condition-none.png",
+  mild: "assets/body-garden/condition-mild.png",
+  moderate: "assets/body-garden/condition-moderate.png",
+};
 
 const CONDITION_SYMPTOMS = [
   { id: "nausea", label: "悪心" },
