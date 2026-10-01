@@ -214,6 +214,25 @@ const MIGRATIONS = {
 };
 
 const Storage = {
+  // true の間は save() が何も書き込まない（データを守るための読み取り専用モード）。
+  //   "newerSchema": 保存データがこのアプリより新しい版で作られている
+  //   "preMigrationBackupFailed": 移行前の退避に失敗したため、移行結果を保存しない
+  readOnly: false,
+  readOnlyReason: null,
+  // 起動後に保存できなくなった（容量不足・他タブが新しい版を保存など）ときに、画面側へ知らせるための連絡先。
+  // 引数は "saveFailed" | "newerSchema"。ui-backup.js が帯の表示を結びつける。
+  onProblem: null,
+
+  _notify(kind) {
+    if (typeof this.onProblem === "function") {
+      try {
+        this.onProblem(kind);
+      } catch (_) {
+        // 通知の失敗で保存処理を妨げない
+      }
+    }
+  },
+
   load() {
     let raw;
     try {
@@ -230,19 +249,61 @@ const Storage = {
     let state;
     try {
       state = JSON.parse(raw);
+      if (state === null || typeof state !== "object" || Array.isArray(state)) {
+        throw new Error("stateがオブジェクトではありません");
+      }
     } catch (e) {
       console.error("[BodyGarden] state破損。バックアップを退避し初期状態にフォールバック", e);
+      let kept = false;
       try {
         localStorage.setItem(`${STORAGE_KEY}.corrupted.${Date.now()}`, raw);
+        kept = true;
       } catch (_) {
-        // バックアップ自体が失敗しても初期状態へのフォールバックは継続する
+        // 退避できない
+      }
+      if (!kept) {
+        // 退避できないまま初期状態で上書きすると、元のデータを失う。メモリ上の初期状態で起動し、保存しない。
+        this.readOnly = true;
+        this.readOnlyReason = "corruptBackupFailed";
+        const fresh = createDefaultState();
+        fresh.profile.startDate = todayISODate();
+        return fresh;
       }
       return this._seedFreshState();
     }
 
-    state = this.migrate(state);
-    this.save(state); // マイグレーション結果を即保存し、次回読み込みで同じ変換を繰り返さないようにする
-    return state;
+    const storedVersion = state.schemaVersion || 1;
+
+    // このアプリより新しい版のデータは、変換も保存もしない（古いアプリが新しいデータを壊さないため）
+    if (storedVersion > SCHEMA_VERSION) {
+      console.warn(`[BodyGarden] 保存データ(v${storedVersion})がアプリ(v${SCHEMA_VERSION})より新しいため、読み取り専用で起動します`);
+      this.readOnly = true;
+      this.readOnlyReason = "newerSchema";
+      return state;
+    }
+
+    if (storedVersion < SCHEMA_VERSION) {
+      // 移行の前に生データを一度だけ退避する（既にあれば上書きしない）。
+      // 退避できなければ、移行結果はメモリ上だけで使い、保存しない。
+      const backupKey = `${STORAGE_KEY}.preMigration.v${storedVersion}`;
+      let backedUp = false;
+      try {
+        if (localStorage.getItem(backupKey) === null) localStorage.setItem(backupKey, raw);
+        backedUp = true;
+      } catch (e) {
+        console.error("[BodyGarden] 移行前の退避に失敗。移行結果は保存しません", e);
+      }
+      state = this.migrate(state);
+      if (backedUp) {
+        this.save(state); // マイグレーション結果を保存し、次回読み込みで同じ変換を繰り返さないようにする
+      } else {
+        this.readOnly = true;
+        this.readOnlyReason = "preMigrationBackupFailed";
+      }
+      return state;
+    }
+
+    return state; // 同じ版のデータは変換不要なので、読み込みだけでは書き込まない
   },
 
   // 初回起動時・復旧時の共通処理。startDateを今日にセットして保存する
@@ -254,22 +315,46 @@ const Storage = {
     return fresh;
   },
 
-  migrate(state) {
+  // strict=true（バックアップ読み込み時）は、移行関数が無い・版が進まない場合に例外を投げる。
+  // strict=false（通常起動時）は従来どおり、移行できるところまで進めて止まる。
+  migrate(state, { strict = false } = {}) {
     let version = state.schemaVersion || 1;
     while (version < SCHEMA_VERSION) {
       const migrateFn = MIGRATIONS[version];
-      if (!migrateFn) break;
+      if (!migrateFn) {
+        if (strict) throw new Error(`v${version} からの移行関数がありません`);
+        break;
+      }
       state = migrateFn(state);
+      if (strict && !(state.schemaVersion > version)) {
+        throw new Error(`v${version} の移行で版が進みませんでした`);
+      }
       version = state.schemaVersion;
     }
     return state;
   },
 
+  // 書き込めたら true。読み取り専用モード、または保存済みデータの方が新しい版のときは書かない
   save(state) {
+    if (this.readOnly) return false;
     try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const m = /"schemaVersion"\s*:\s*(\d+)/.exec(stored);
+        if (m && Number(m[1]) > SCHEMA_VERSION) {
+          console.warn("[BodyGarden] 保存済みデータの方が新しい版のため、上書きしません");
+          this.readOnly = true;
+          this.readOnlyReason = "newerSchema";
+          this._notify("newerSchema");
+          return false;
+        }
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
     } catch (e) {
       console.error("[BodyGarden] localStorage書き込み失敗", e);
+      this._notify("saveFailed");
+      return false;
     }
   },
 

@@ -4,6 +4,6 @@
   "private": true,
   "description": "体重・体組成・タンパク質・注射・体調を整えて記録する個人用セルフマネジメントアプリ",
   "scripts": {
-    "test": "echo \"(no tests yet)\" && exit 0"
+    "test": "node --test \"tests/*.test.js\""
   }
 }

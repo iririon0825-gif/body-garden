@@ -708,6 +708,47 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
   margin: 0 0 8px;
 }
 
+/* ============ バックアップ（設定画面）・読み取り専用の帯 ============ */
+.modal-card { max-height: calc(100vh - 40px); overflow-y: auto; }
+.backup-note { font-size: 0.85rem; line-height: 1.7; color: var(--text-lo); margin: 0 0 14px; }
+.backup-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.backup-meta { font-size: 0.78rem; line-height: 1.6; color: var(--text-lo); margin: 0 0 8px; }
+.backup-subactions { display: flex; gap: 12px; flex-wrap: wrap; }
+.backup-pre { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(0, 0, 0, 0.06); }
+.backup-textarea {
+  width: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-hi);
+}
+.backup-list { margin: 0 0 14px; padding-left: 1.2em; font-size: 0.82rem; line-height: 1.7; color: var(--text-lo); }
+.backup-reassure { margin-bottom: 14px; }
+.backup-compare { width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 0.82rem; }
+.backup-compare th, .backup-compare td { padding: 4px 6px; text-align: right; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.backup-compare th:first-child, .backup-compare thead th:first-child { text-align: left; font-weight: 500; }
+.backup-compare thead th { font-size: 0.75rem; color: var(--text-lo); font-weight: 700; }
+.backup-confirm-actions { justify-content: flex-end; }
+.backup-confirm-actions .btn-text { margin-right: auto; }
+.newer-schema-screen { max-width: 520px; margin: 0 auto; padding: 32px 16px; }
+.readonly-banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: center;
+  color: #fff;
+  background: #7a4f6b;
+}
+
 /* ============ 記録一覧 ============ */
 .record-history-list { list-style: none; margin: 0; padding: 0; }
 .record-history-row {

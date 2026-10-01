@@ -74,6 +74,7 @@ const SettingsUI = {
     this._bindEvents(state);
     this._updateComputedDisplays(state);
     ProteinSettingsUI.render(state);
+    BackupUI.render(state);
   },
 
   _goalFieldsHtml(key, goal, profile) {
