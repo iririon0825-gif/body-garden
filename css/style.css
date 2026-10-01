@@ -1819,3 +1819,44 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .csv-status { font-size: 0.8rem; line-height: 1.6; color: var(--teal); min-height: 1.2em; margin: 4px 0 0; }
 .csv-sub { font-size: 0.78rem; color: var(--text-lo); margin: 8px 0 4px; }
 .csv-fallback { margin-top: 4px; }
+
+/* ============ 4タブ（記録・注射・体組成・設定）のテーマ色 ============
+   既存の .card の background 定義（var(--card-wash), var(--card-bg)）は変更しない。
+   画面ごとに、その手前へ薄い色のレイヤーを1枚追加するだけ（linear-gradient(同色,同色) で
+   フラットな色をbackground-imageレイヤーとして重ねる、よくある手法）。
+   色は既存トークン（teal/lavender/dusty-pink/morning-light）の-softバリアントを流用し、
+   新しい色相は作らない。見出し色（--tab-*-ink）は、実際に重なる背景（ページ背景→card-bg→
+   card-wash→このwash）に対してWCAG AA（4.5:1）以上になるよう計算して選んだ値。 */
+:root {
+  --tab-records-wash: rgba(207, 230, 224, 0.10);     /* teal-soft */
+  --tab-records-ink: #316d60;
+  --tab-injection-wash: rgba(222, 214, 238, 0.10);   /* lavender-soft */
+  --tab-injection-ink: var(--home-heading);          /* HOMEの注射カードと同じ見出し色で継続性を持たせる */
+  --tab-composition-wash: rgba(240, 218, 220, 0.10); /* dusty-pink-soft */
+  --tab-composition-ink: #a34349;
+  --tab-settings-wash: rgba(246, 233, 216, 0.10);    /* morning-light */
+  --tab-settings-ink: #835b21;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tab-records-ink: #a5d4ca;
+    --tab-injection-ink: #d0c6e7;
+    --tab-composition-ink: #e7c0c3;
+    --tab-settings-ink: #e8d2b0;
+  }
+}
+:root[data-theme="dark"] {
+  --tab-records-ink: #a5d4ca;
+  --tab-injection-ink: #d0c6e7;
+  --tab-composition-ink: #e7c0c3;
+  --tab-settings-ink: #e8d2b0;
+}
+
+[data-screen="records"] .card { background: linear-gradient(var(--tab-records-wash), var(--tab-records-wash)), var(--card-wash), var(--card-bg); }
+[data-screen="records"] .card-title { color: var(--tab-records-ink); }
+[data-screen="injection"] .card { background: linear-gradient(var(--tab-injection-wash), var(--tab-injection-wash)), var(--card-wash), var(--card-bg); }
+[data-screen="injection"] .card-title { color: var(--tab-injection-ink); }
+[data-screen="composition"] .card { background: linear-gradient(var(--tab-composition-wash), var(--tab-composition-wash)), var(--card-wash), var(--card-bg); }
+[data-screen="composition"] .card-title { color: var(--tab-composition-ink); }
+[data-screen="settings"] .card { background: linear-gradient(var(--tab-settings-wash), var(--tab-settings-wash)), var(--card-wash), var(--card-bg); }
+[data-screen="settings"] .card-title { color: var(--tab-settings-ink); }
