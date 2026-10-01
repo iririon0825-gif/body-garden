@@ -273,10 +273,12 @@ const BackupUI = {
 
   _showConfirm(result) {
     const s = result.summary;
-    const rows = Backup.COUNT_KEYS.map(
-      (k) =>
-        `<tr><th scope="row">${this.COUNT_LABELS[k]}</th><td>${s.current ? s.current[k] : "—"} 件</td><td>${s.incoming[k]} 件</td></tr>`
-    ).join("") + `<tr><th scope="row">体組成のある日</th><td>${s.compositionDays && s.compositionDays.current !== null ? s.compositionDays.current : "—"} 日</td><td>${s.compositionDays ? s.compositionDays.incoming : 0} 日</td></tr>`;
+    const rows = Backup.COUNT_KEYS.map((k) => {
+      // dailyRecords は体組成・メモだけの日も含むので、体重の記録は体重が入っている日の数で出す
+      const cur = k === "dailyRecords" && s.weightDays ? s.weightDays.current : s.current ? s.current[k] : null;
+      const inc = k === "dailyRecords" && s.weightDays ? s.weightDays.incoming : s.incoming[k];
+      return `<tr><th scope="row">${this.COUNT_LABELS[k]}</th><td>${cur === null ? "—" : cur} 件</td><td>${inc} 件</td></tr>`;
+    }).join("") + `<tr><th scope="row">体組成のある日</th><td>${s.compositionDays && s.compositionDays.current !== null ? s.compositionDays.current : "—"} 日</td><td>${s.compositionDays ? s.compositionDays.incoming : 0} 日</td></tr>`;
     const warnings = result.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("");
     const exported = result.envelope.exportedAt ? this._fmtTs(result.envelope.exportedAt) : "不明";
     UI.showModal(`

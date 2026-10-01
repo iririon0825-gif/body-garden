@@ -243,14 +243,20 @@ const Backup = {
     ).length;
   },
 
+  // 体重が入っている日の数（確認画面の表示用。counts() は書き出しの整合確認に使うので変えない）
+  _weightRecords(state) {
+    return (Array.isArray(state.dailyRecords) ? state.dailyRecords : []).filter((r) => r && typeof r.weight === "number");
+  },
+
   summarize(candidate, currentState, fileVersion) {
-    const dates = (candidate.dailyRecords || []).map((r) => r.date).sort();
+    const dates = this._weightRecords(candidate).map((r) => r.date).sort();
     return {
       fileVersion,
       currentVersion: SCHEMA_VERSION,
       migrated: fileVersion !== SCHEMA_VERSION,
       incoming: this.counts(candidate),
       current: currentState ? this.counts(currentState) : null,
+      weightDays: { incoming: this._weightRecords(candidate).length, current: currentState ? this._weightRecords(currentState).length : null },
       compositionDays: { incoming: this._compositionDays(candidate), current: currentState ? this._compositionDays(currentState) : null },
       range: dates.length > 0 ? { from: dates[0], to: dates[dates.length - 1] } : null,
     };
