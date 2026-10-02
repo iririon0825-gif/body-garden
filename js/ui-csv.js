@@ -20,6 +20,7 @@ const CsvUI = {
     const el = document.getElementById("csv-root");
     if (!el) return;
     this._state = state;
+    const fileCount = Object.keys(CsvLogic.SHEET_LABELS).length;
     el.innerHTML = `
       <section class="card csv-card">
         <p class="card-title">${UI.lineIcon("records")}分析用CSVを書き出す</p>
@@ -28,7 +29,7 @@ const CsvUI = {
           データの復元には、上の「データのバックアップ」をお使いください。
         </p>
         <div class="csv-actions">
-          <button class="btn-primary" id="csv-all-btn">すべて書き出す（7ファイル）</button>
+          <button class="btn-primary" id="csv-all-btn">すべて書き出す（${fileCount}ファイル）</button>
         </div>
         <ul class="csv-list">
           ${Object.entries(CsvLogic.SHEET_LABELS)
@@ -96,7 +97,15 @@ const CsvUI = {
   },
 
   _buildOne(sheet) {
-    const fn = { weight: "buildWeight", body_composition: "buildBodyComposition", protein: "buildProtein", injections: "buildInjections", injection_schedule: "buildInjectionSchedule", conditions: "buildConditions" }[sheet];
+    const fn = {
+      weight: "buildWeight",
+      body_composition: "buildBodyComposition",
+      protein: "buildProtein",
+      injections: "buildInjections",
+      injection_schedule: "buildInjectionSchedule",
+      conditions: "buildConditions",
+      cycles: "buildCycles",
+    }[sheet];
     return { sheet, ...CsvLogic[fn](this._state) };
   },
 
@@ -106,6 +115,7 @@ const CsvUI = {
     this._clearFallback();
     const now = new Date();
     const defs = CsvLogic.buildAll(this._state, now).map((d) => CsvLogic.toFile(d, now));
+    const fileCount = defs.length;
 
     if (this._isIOS() && navigator.canShare && navigator.share) {
       const files = defs.map((d) => this._toFile(d));
@@ -114,7 +124,7 @@ const CsvUI = {
         this._status("共有シートを開いています…");
         navigator
           .share({ files })
-          .then(() => this._status("7ファイルを渡しました。"))
+          .then(() => this._status(`${fileCount}ファイルを渡しました。`))
           .catch((e) => {
             if (e && e.name === "AbortError") return this._status("キャンセルしました。");
             // 複数ファイルの共有に失敗した環境: 1件ずつ渡す一覧に切り替える（新しく作り直さず、同じFileを使う）
@@ -134,7 +144,7 @@ const CsvUI = {
 
     // iOS以外: 続けてダウンロード。ブラウザ側で一部だけ止められることがあるため、個別の一覧も残す
     defs.forEach((d, i) => setTimeout(() => this._download(d), i * 150));
-    this._status("7ファイルのダウンロードを開始しました。途中で止まった場合は、下の一覧から個別に書き出してください。");
+    this._status(`${fileCount}ファイルのダウンロードを開始しました。途中で止まった場合は、下の一覧から個別に書き出してください。`);
     this._showFallback(defs, { downloadedAlready: true });
   },
 

@@ -259,6 +259,14 @@ const MIGRATIONS = {
     state.schemaVersion = 6;
     return state;
   },
+
+  // v6: cycleEntries が無い。v7: 月経記録（cycleEntries）に対応。
+  // 無ければ空配列を足すだけの冪等な移行。既存データ（体重・注射・在庫・Protein・体調・体組成）には一切触れない。
+  6: (state) => {
+    state.cycleEntries = Array.isArray(state.cycleEntries) ? state.cycleEntries : [];
+    state.schemaVersion = 7;
+    return state;
+  },
 };
 
 const Storage = {

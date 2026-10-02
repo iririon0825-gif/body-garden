@@ -335,12 +335,12 @@ test("export_info: 件数・在庫の内訳がほかのシート・stockSummary�
 
 // ---------- 全体・非干渉 ----------
 
-test("buildAll: 7シート、state・profile・goalsは一切変更しない", () => {
+test("buildAll: 8シート、state・profile・goalsは一切変更しない", () => {
   const { C, s } = setup();
   const before = JSON.stringify(s);
   const defs = C.buildAll(s, new Date(2026, 9, 10, 9, 0));
   assert.equal(JSON.stringify(s), before, "state を変更しない");
-  assert.deepEqual(clone(defs.map((d) => d.sheet)), ["weight", "body_composition", "protein", "injections", "injection_schedule", "conditions", "export_info"]);
+  assert.deepEqual(clone(defs.map((d) => d.sheet)), ["weight", "body_composition", "protein", "injections", "injection_schedule", "conditions", "cycles", "export_info"]);
   for (const d of defs) {
     const file = C.toFile(d, new Date(2026, 9, 10, 9, 0));
     assert.match(file.fileName, /^body-garden-[a-z_]+-\d{8}-\d{4}\.csv$/);

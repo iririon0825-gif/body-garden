@@ -18,9 +18,9 @@ const Backup = {
   PRE_RESTORE_KEY: `${STORAGE_KEY}.preRestore`, // 値は退避した生データそのもの
   PRE_RESTORE_AT_KEY: `${STORAGE_KEY}.preRestoreAt`, // 退避した日時（ISO）
   META_LAST_BACKUP_KEY: "bodyGarden.meta.lastBackupAt", // state外に置く（バックアップ自身に含めない）
-  COUNT_KEYS: ["dailyRecords", "proteinEntries", "conditionEntries", "injections", "proteinProducts", "registeredFoods"],
+  COUNT_KEYS: ["dailyRecords", "proteinEntries", "conditionEntries", "cycleEntries", "injections", "proteinProducts", "registeredFoods"],
   KNOWN_TOP_KEYS: [
-    "schemaVersion", "profile", "goals", "dailyRecords", "proteinEntries", "conditionEntries",
+    "schemaVersion", "profile", "goals", "dailyRecords", "proteinEntries", "conditionEntries", "cycleEntries",
     "guardrails", "injections", "injectionSchedule", "injectionStock", "proteinProducts", "registeredFoods", "ui",
   ],
   SCREENS: ["home", "records", "injection", "composition", "settings"],
@@ -455,6 +455,25 @@ const Backup = {
       if (e.comment !== undefined && !str(e.comment, this.LIMITS.text)) err(`conditionEntries[${i}].comment が不正です`);
       if (e.createdAt !== undefined && !ts(e.createdAt)) err(`conditionEntries[${i}].createdAt が不正です`);
     });
+
+    // cycleEntries（月経の記録。1件＝1回の月経期間。未来日は警告のみ＝dailyRecordsと同じ方針。
+    // 強い禁止（未来日を保存させない・重複を作らせない）はcycle-logic.jsの書き込み側で行う）
+    const cy = list("cycleEntries");
+    uniqueIds("cycleEntries", cy, true);
+    cy.forEach((e, i) => {
+      if (!isObj(e)) return;
+      if (!date(e.startDate)) err(`cycleEntries[${i}].startDate が日付ではありません`);
+      if (!dateOrNull(e.endDate === undefined ? null : e.endDate)) err(`cycleEntries[${i}].endDate が日付ではありません`);
+      if (date(e.startDate) && e.endDate != null && dateOrNull(e.endDate) && e.endDate < e.startDate) {
+        err(`cycleEntries[${i}].endDate が startDate より前です`);
+      }
+      if (date(e.startDate) && typeof todayISODate === "function" && e.startDate > todayISODate()) warn(`cycleEntries[${i}] の開始日が未来の日付です（${e.startDate}）`);
+      if (e.endDate != null && dateOrNull(e.endDate) && typeof todayISODate === "function" && e.endDate > todayISODate()) warn(`cycleEntries[${i}] の終了日が未来の日付です（${e.endDate}）`);
+      if (e.comment !== undefined && !str(e.comment, this.LIMITS.text)) err(`cycleEntries[${i}].comment が不正です`);
+      if (e.createdAt !== undefined && !tsOrNull(e.createdAt)) err(`cycleEntries[${i}].createdAt が不正です`);
+      if (e.updatedAt !== undefined && !tsOrNull(e.updatedAt)) err(`cycleEntries[${i}].updatedAt が不正です`);
+    });
+    if (cy.filter((e) => isObj(e) && e.endDate == null).length > 1) err("cycleEntries に「月経中」の記録が複数あります");
 
     // guardrails
     if (!isObj(s.guardrails) || !isObj(s.guardrails.bmi21) || !isObj(s.guardrails.bmi20)) {

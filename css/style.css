@@ -986,6 +986,11 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
   --chart-goal2: #9db4ff;
   --chart-bmi21: #f2dc9c;
   --chart-bmi20: #ffae9e;
+  /* 月経周期の背景帯（候補色。後から調整できるよう変数として分離）。
+     体重線・点・軸ラベルより目立たないよう、低濃度にしてある */
+  --chart-cycle-period: rgba(199, 125, 150, 0.22);     /* 月経期：ローズモーヴ系 */
+  --chart-cycle-follicular: rgba(150, 150, 220, 0.14); /* 卵胞期：淡い青紫系 */
+  --chart-cycle-luteal: rgba(214, 160, 200, 0.14);     /* 黄体期：淡いラベンダーピンク系 */
 }
 .graph-card .card-title { color: #ffffff; margin-bottom: 0; }
 .graph-card .title-icon-svg { color: rgba(255, 255, 255, 0.85); }
@@ -1883,3 +1888,19 @@ body:has([data-screen="settings"]:not([hidden])) {
 [data-screen="records"] .cond-msg {
   color: var(--tab-ink);
 }
+
+/* ============ 月経（記録タブ：開始・終了・履歴・編集） ============ */
+.cycle-card + .cycle-card { margin-top: 0; }
+.cycle-state { font-size: 0.95rem; font-weight: 700; margin: 0 0 4px; }
+.cycle-sub { font-size: 0.82rem; color: var(--text-lo); margin: 0 0 10px; }
+.cycle-note { font-size: 0.78rem; line-height: 1.6; color: var(--text-lo); margin: 0 0 8px; }
+.cycle-msg { font-size: 0.78rem; line-height: 1.5; font-weight: 700; color: var(--tab-ink); margin: 0 0 6px; }
+.cycle-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.cycle-memo-field { margin: 10px 0 0; }
+.cycle-textarea { width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 1rem; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.6); color: var(--text-hi); resize: vertical; }
+.cycle-list { list-style: none; margin: 0; padding: 0; }
+.cycle-row { padding: 8px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.cycle-row-main { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.cycle-row-memo { font-size: 0.8rem; line-height: 1.5; margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-lo); }
+.cycle-row-actions { display: flex; gap: 8px; margin-top: 4px; }
+.cycle-chip { display: inline-block; font-size: 0.7rem; font-weight: 700; line-height: 1.6; padding: 0 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.06); color: var(--text-hi); }

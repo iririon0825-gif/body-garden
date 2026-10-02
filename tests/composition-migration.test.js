@@ -38,7 +38,7 @@ test("v5 → v6: 既存の値は1つも変わらず、足りないキーが null
   env.ls.setItem(env.STORAGE_KEY, raw);
   const before = JSON.parse(raw);
   const s = env.Storage.load();
-  assert.equal(s.schemaVersion, 6);
+  assert.equal(s.schemaVersion, 7);
   s.dailyRecords.forEach((r, i) => {
     assert.equal(r.date, before.dailyRecords[i].date);
     assert.equal(r.weight, before.dailyRecords[i].weight);
@@ -61,7 +61,7 @@ test("v5 → v6: 移行前の生データを preMigration.v5 に退避してか�
   env.ls.setItem(env.STORAGE_KEY, raw);
   env.Storage.load();
   assert.equal(env.ls.getItem(`${env.STORAGE_KEY}.preMigration.v5`), raw);
-  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 6);
+  assert.equal(JSON.parse(env.ls.getItem(env.STORAGE_KEY)).schemaVersion, 7);
   const env2 = loadEnv();
   env2.ls.setItem(`${env2.STORAGE_KEY}.preMigration.v5`, "最初の退避");
   env2.ls.setItem(env2.STORAGE_KEY, raw);
@@ -112,7 +112,7 @@ test("v4 → v6（連鎖）: 注射の移行と体組成の移行が順に行わ
   };
   env.ls.setItem(env.STORAGE_KEY, JSON.stringify(v4));
   const s = env.Storage.load();
-  assert.equal(s.schemaVersion, 6);
+  assert.equal(s.schemaVersion, 7);
   assert.equal(s.dailyRecords[0].bodyComposition.bodyFatPct, 30);
   assert.equal(s.dailyRecords[0].bodyComposition.bmi, null);
   assert.equal(s.injections[0].stockCount, "review", "注射・在庫の移行も行われる");
@@ -127,7 +127,7 @@ test("旧バックアップ（v5）は v6 へ変換して取り込める。値�
   const e = { app: "body-garden", kind: "full-backup", formatVersion: 1, schemaVersion: 5, exportedAt: "2026-10-01T00:00:00Z", counts: env.Backup.counts(v5), state: v5 };
   const r = env.Backup.parse(JSON.stringify(e), null);
   assert.equal(r.ok, true, JSON.stringify(r));
-  assert.equal(r.state.schemaVersion, 6);
+  assert.equal(r.state.schemaVersion, 7);
   assert.equal(r.summary.migrated, true);
   assert.equal(r.state.dailyRecords[1].bodyComposition.bodyFatPct, 31.2);
   assert.equal(r.state.dailyRecords[1].bodyComposition.bodyType, null);
@@ -144,10 +144,10 @@ test("v6 のバックアップは書き出し→読み込みで完全に一致�
   assert.deepEqual(clone(r.state), clone(s));
 });
 
-test("新しい版（v7）のバックアップは拒否される", () => {
+test("新しい版（v8）のバックアップは拒否される", () => {
   const env = loadEnv();
   const e = JSON.parse(exportText(env, sampleState(env)));
-  e.schemaVersion = 7;
-  e.state.schemaVersion = 7;
+  e.schemaVersion = 8;
+  e.state.schemaVersion = 8;
   assert.equal(env.Backup.parse(JSON.stringify(e), null).code, "NEWER_SCHEMA");
 });

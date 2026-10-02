@@ -3,7 +3,7 @@
 // すべて profile / goals / proteinProducts / registeredFoods に保持し、
 // UI側は必ずこれらを参照する。
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 // ============ 注射管理の定数 ============
 // 製剤規格（マンジャロ皮下注アテオス、各0.5mL）。出典: 日本イーライリリー電子添付文書
@@ -203,6 +203,19 @@ function createConditionEntry(date) {
   };
 }
 
+// 月経の記録（v7）。1件＝1回の月経期間。「体重変動を月経周期の文脈と一緒に見る」ためのもので、
+// 排卵日の確定や診断は行わない。卵胞期・黄体期は保存せず、表示のたびに計算する（cycle-logic.js）。
+function createCycleEntry() {
+  return {
+    id: null, // storage.js で採番
+    startDate: null, // "YYYY-MM-DD"（必須）
+    endDate: null, // "YYYY-MM-DD" | null（null＝現在月経中）
+    comment: "", // 任意メモ。症状・経血量の専用項目は持たない（体調タブと役割を分ける）
+    createdAt: null,
+    updatedAt: null,
+  };
+}
+
 // 注射の1件分の記録（v5）。予定日(scheduledAt)と実施日(administeredAt)は必ず別フィールドに保持する。
 //
 // status（状態）: 'scheduled'（予定。未投与）| 'administered'（実際に投与した記録）| 'skipped'（見送りの記録）
@@ -287,6 +300,7 @@ function createDefaultState() {
     dailyRecords: [], // createEmptyDailyRecord() の配列。date昇順を保証しない（storage側でソート）
     proteinEntries: [], // createProteinEntry() の配列。1日に複数件持てる
     conditionEntries: [], // createConditionEntry() の配列。1日に複数件持てる
+    cycleEntries: [], // createCycleEntry() の配列。1件＝1回の月経期間
     guardrails: createDefaultGuardrails(),
     injections: [], // createEmptyInjection() の配列
     injectionSchedule: createDefaultInjectionSchedule(),

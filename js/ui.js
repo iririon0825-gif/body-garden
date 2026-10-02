@@ -60,6 +60,7 @@ const UI = {
     }
     if (screenName === "records") {
       RecordsUI.render(this.state);
+      if (typeof CycleUI !== "undefined") CycleUI.render(this.state);
       if (typeof ConditionUI !== "undefined") ConditionUI.renderDetail(this.state);
     }
     if (screenName === "injection" && typeof InjectionUI !== "undefined") InjectionUI.render(this.state);

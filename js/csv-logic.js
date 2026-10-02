@@ -87,6 +87,7 @@ const CsvLogic = {
     injections: "注射",
     injection_schedule: "注射の定例スケジュール変更",
     conditions: "体調・副作用",
+    cycles: "月経",
     export_info: "書き出し情報",
   },
 
@@ -268,6 +269,19 @@ const CsvLogic = {
     return { headers, rows };
   },
 
+  buildCycles(state) {
+    const headers = ["ID", "開始日", "終了日", "日数", "メモ", "記録日時", "更新日時"];
+    const CL = typeof CycleLogic !== "undefined" ? CycleLogic : null;
+    const rows = (state.cycleEntries || [])
+      .slice()
+      .sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : (a.id || 0) - (b.id || 0)))
+      .map((e) => {
+        const days = e.endDate && CL ? CL._diffDays(e.startDate, e.endDate) + 1 : null;
+        return [e.id, e.startDate, e.endDate || null, days, e.comment || "", this._localTs(e.createdAt), this._localTs(e.updatedAt)];
+      });
+    return { headers, rows };
+  },
+
   buildExportInfo(state, now = new Date()) {
     const weight = this._weightRecords(state);
     const comp = this._compositionRecords(state);
@@ -302,6 +316,7 @@ const CsvLogic = {
       ["injections 内訳_見送り", byStatus.skipped],
       ["injections 投与済みのうち実施日なし（旧データ）", administeredNoDate],
       ["conditions 件数", (state.conditionEntries || []).length],
+      ["cycles 件数", (state.cycleEntries || []).length],
       ["身長_cm", state.profile ? state.profile.heightCm : null],
       ["在庫_初期本数", initial],
       ["在庫_数える本数", counts],
@@ -328,6 +343,7 @@ const CsvLogic = {
     const i = this.buildInjections(state);
     const s = this.buildInjectionSchedule(state);
     const cd = this.buildConditions(state);
+    const cy = this.buildCycles(state);
     const info = this.buildExportInfo(state, now);
     return [
       { sheet: "weight", ...w },
@@ -336,6 +352,7 @@ const CsvLogic = {
       { sheet: "injections", ...i },
       { sheet: "injection_schedule", ...s },
       { sheet: "conditions", ...cd },
+      { sheet: "cycles", ...cy },
       { sheet: "export_info", ...info },
     ];
   },

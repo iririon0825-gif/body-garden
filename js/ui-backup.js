@@ -7,6 +7,7 @@ const BackupUI = {
     dailyRecords: "体重の記録",
     proteinEntries: "Proteinの記録",
     conditionEntries: "体調の記録",
+    cycleEntries: "月経の記録",
     injections: "注射",
     proteinProducts: "ホエイ商品",
     registeredFoods: "登録食品",

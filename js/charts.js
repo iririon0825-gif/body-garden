@@ -126,6 +126,16 @@ const Charts = {
     Chart.defaults.color = cv("--chart-text", "#666");
     Chart.defaults.borderColor = cv("--chart-grid", "rgba(0, 0, 0, 0.1)");
 
+    // 月経周期の背景帯。CycleLogicは色を知らない（from/to/phaseだけを返す純粋関数）ので、
+    // 描画の直前にここで色（CSS変数）へ変換する。cycle-logic.jsが無い/未読込でも描画は止めない
+    const PHASE_FALLBACK = { period: "rgba(199,125,150,0.22)", follicular: "rgba(150,150,220,0.14)", luteal: "rgba(214,160,200,0.14)" };
+    // 「今日」はこの関数の横軸と同じ基準（today, 上で計算済み）を使う。CycleLogic側の既定(new Date())とは
+    // 別の時計にならないようにする
+    this.bands =
+      typeof CycleLogic !== "undefined"
+        ? CycleLogic.bands(state, parseISO(today)).map((b) => ({ from: b.from, to: b.to, color: cv(`--chart-cycle-${b.phase}`, PHASE_FALLBACK[b.phase]) }))
+        : [];
+
     const spanDays = days.length;
     this._instances[canvasId] = new Chart(canvas.getContext("2d"), {
       type: "line",
