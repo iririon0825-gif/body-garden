@@ -1366,6 +1366,14 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
      （stretchを解除。登録食品が増えても、左の注射カードに空のパネルが伸びない） */
   .home-lower[data-layout="v1"] { grid-template-areas: "inj pro" "con goal"; align-items: start; }
   .home-lower[data-layout="v2"] { grid-template-areas: "inj con" "pro pro" "goal goal"; }
+  /* Goalカードだけは、同じ行の体調カードの高さに合わせて伸ばし、中身を縦中央に寄せる
+     （内容を増やさず、短いカードが取り残されて見える段差だけを解消する） */
+  .home-lower .goal-status-card {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
 
   .home-lower .card {
     padding: 12px;
@@ -1761,7 +1769,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .cond-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 8px; }
 .cond-head .card-title { margin-bottom: 4px; }
 .cond-more { background: none; border: none; padding: 4px 0; font-family: var(--font-body); font-size: 0.72rem; color: var(--text-lo); cursor: pointer; white-space: nowrap; }
-.cond-status { font-size: 0.72rem; line-height: 1.5; color: var(--text-lo); margin: 0 0 4px; }
+.cond-status { font-size: 0.72rem; line-height: 1.5; color: var(--text-lo); margin: 0 0 2px; }
 .cond-note { font-size: 0.76rem; line-height: 1.6; color: var(--text-lo); margin: 0 0 8px; }
 .cond-sub { font-size: 0.8rem; color: var(--text-lo); margin: 10px 0 6px; }
 .cond-msg { font-size: 0.78rem; line-height: 1.5; font-weight: 700; color: var(--teal); margin: 0 0 6px; }
@@ -1784,7 +1792,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .cond-memo { width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 16px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.7); color: var(--text-hi); }
 .cond-memo-view { font-size: 0.8rem; line-height: 1.5; margin: 0 0 6px; white-space: pre-line; overflow-wrap: anywhere; max-height: 4.6em; overflow: hidden; }
 .cond-memo-view.is-empty { color: var(--text-lo); }
-.cond-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cond-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
 .cond-btn { padding: 8px 12px; font-size: 0.78rem; }
 .cond-faces-detail .cond-face { width: 48px; height: 48px; }
 .cond-faces-detail .cond-face-label { font-size: 0.8rem; }
