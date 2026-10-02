@@ -19,6 +19,10 @@
 }
 
 :root {
+  /* Body Gardenは固定ライトテーマ。OSのdark/lightには追従しない
+     （iPhone実機でOSダークモード時に可読性が落ちる不具合の修正。2026-10-02）。
+     ネイティブのフォームコントロール（checkbox・date/time input等）も明示的にlight指定する */
+  color-scheme: light;
   --font-display: "Kaisei Decol", "游明朝体", "Yu Mincho", "Hiragino Mincho ProN", serif;
   --font-body: "Kaisei Decol", "游明朝体", "Yu Mincho", "Hiragino Mincho ProN", serif;
   --home-heading: #4d4270;
@@ -45,28 +49,7 @@
   --shadow-glass: 0 6px 20px rgba(150, 130, 160, 0.10);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg-0: #26232a;
-    --bg-1: #2d2a32;
-    --text-hi: #f2ede8;
-    --text-lo: #b8afc4;
-    --card-bg: rgba(60, 55, 66, 0.55);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --card-wash: linear-gradient(135deg, rgba(183, 169, 214, 0.16), rgba(217, 169, 172, 0.12) 45%, rgba(207, 230, 224, 0.14));
-    --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.35);
-  }
-}
-:root[data-theme="dark"] {
-  --bg-0: #26232a;
-  --bg-1: #2d2a32;
-  --text-hi: #f2ede8;
-  --text-lo: #b8afc4;
-  --card-bg: rgba(60, 55, 66, 0.55);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-wash: linear-gradient(135deg, rgba(183, 169, 214, 0.16), rgba(217, 169, 172, 0.12) 45%, rgba(207, 230, 224, 0.14));
-  --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.35);
-}
+/* OSダークモード追従は廃止（固定ライトテーマ）。dark用のtoken上書きは持たない */
 
 * { box-sizing: border-box; }
 
@@ -530,7 +513,7 @@ nav.bottom-nav button {
   gap: 3px;
   padding: 4px 10px;
 }
-nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
+nav.bottom-nav button.is-active { color: var(--tab-ink); font-weight: 700; }
 
 /* ============ 線アイコン（SVG, currentColor） ============ */
 .nav-icon-svg {
@@ -538,7 +521,7 @@ nav.bottom-nav button.is-active { color: var(--teal); font-weight: 700; }
   height: 28px;
   color: var(--icon-line);
 }
-nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
+nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
 
 .title-icon-svg {
   width: 28px;
@@ -1852,17 +1835,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
      冷たい白〜淡いラベンダーにして、HOMEの青紫世界観につなげる */
   --tab-page-bg: linear-gradient(180deg, var(--lavender-soft) 0%, #f3f0f8 35%, #f6f5f9 75%);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --tab-ink: #d0c6e7;
-    /* ダークモードは、4タブの見た目を変えないよう、従来のbody背景の式をそのまま使う */
-    --tab-page-bg: linear-gradient(180deg, var(--morning-light) 0%, var(--lavender-soft) 30%, var(--bg-0) 70%);
-  }
-}
-:root[data-theme="dark"] {
-  --tab-ink: #d0c6e7;
-  --tab-page-bg: linear-gradient(180deg, var(--morning-light) 0%, var(--lavender-soft) 30%, var(--bg-0) 70%);
-}
+/* OSダークモード追従は廃止（固定ライトテーマ）。4タブもライト側のtab-ink/tab-page-bgを常時使う */
 
 body:has([data-screen="records"]:not([hidden])),
 body:has([data-screen="injection"]:not([hidden])),
