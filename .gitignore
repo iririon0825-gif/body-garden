@@ -1,1 +1,14 @@
 node_modules/
+
+# 書き出し物（個人データを含むため、誤ってcommitしない）
+body-garden-*.json
+body-garden-*.csv
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+
+# 一時検証ファイル
+*.tmp
+*.bak

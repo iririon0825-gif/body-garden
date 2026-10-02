@@ -3,6 +3,7 @@
   "short_name": "BodyGarden",
   "description": "体重・体組成・タンパク質・注射・体調を整えて記録するセルフマネジメントアプリ",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f7f4f1",
   "theme_color": "#d9a9ac",
