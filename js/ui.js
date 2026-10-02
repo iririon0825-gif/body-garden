@@ -325,10 +325,8 @@ const UI = {
 
       <div class="home-lower" data-layout="${lowerLayout}">
       <div class="home-grid-2col">
-        <section class="card injection-card">
-          <img class="injection-vase" src="${IMAGE_ASSETS.decoInjectionVase}" alt="" onerror="this.remove()" />
-          <p class="card-title">${this.lineIcon("injection")}<span class="t-en">NEXT INJECTION</span><span class="t-jp">次回の注射</span></p>
-          ${typeof InjectionUI !== "undefined" ? InjectionUI.homeCardInnerHtml(this.state) : ""}
+        <section class="card condition-card">
+          ${typeof ConditionUI !== "undefined" ? ConditionUI.homeCardInnerHtml(this.state) : `<p class="card-title">${this.lineIcon("condition")}今日の体調・副作用</p>`}
         </section>
 
         <section class="card protein-card">
@@ -337,8 +335,10 @@ const UI = {
       </div>
 
       <div class="home-grid-2col">
-        <section class="card condition-card">
-          ${typeof ConditionUI !== "undefined" ? ConditionUI.homeCardInnerHtml(this.state) : `<p class="card-title">${this.lineIcon("condition")}今日の体調・副作用</p>`}
+        <section class="card injection-card">
+          <img class="injection-vase" src="${IMAGE_ASSETS.decoInjectionVase}" alt="" onerror="this.remove()" />
+          <p class="card-title">${this.lineIcon("injection")}<span class="t-en">NEXT INJECTION</span><span class="t-jp">次回の注射</span></p>
+          ${typeof InjectionUI !== "undefined" ? InjectionUI.homeCardInnerHtml(this.state) : ""}
         </section>
 
         ${this._goalStatusCardHtml()}

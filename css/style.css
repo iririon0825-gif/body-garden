@@ -585,7 +585,9 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
   border: none;
 }
 .btn-primary {
-  background: linear-gradient(90deg, var(--teal), var(--dusty-pink));
+  /* teal→dusty-pinkは緑が独立して見えるため、HOMEの紫世界になじむ低彩度の
+     青紫ラベンダー→ローズラベンダーへ（意味色のteal/dusty-pink自体は他では変えない） */
+  background: linear-gradient(90deg, #8f82c9, #c98fae);
   color: #fff;
 }
 .btn-secondary {
@@ -704,7 +706,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 }
 .goal-computed {
   font-size: 0.8rem;
-  color: var(--teal);
+  color: var(--tab-ink);
   margin: 0 0 8px;
 }
 
@@ -896,8 +898,8 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .master-list.is-archived { opacity: 0.6; }
 .default-tag {
   font-size: 0.7rem;
-  color: var(--teal);
-  border: 1px solid var(--teal);
+  color: var(--tab-ink);
+  border: 1px solid var(--tab-ink);
   border-radius: 999px;
   padding: 1px 7px;
   margin-left: 4px;
@@ -1364,7 +1366,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
   .home-lower .goal-status-card { grid-area: goal; }
   /* V1（完成モック型・採用基準）：2カラムを維持し、カードの高さは内容に応じて独立させる
      （stretchを解除。登録食品が増えても、左の注射カードに空のパネルが伸びない） */
-  .home-lower[data-layout="v1"] { grid-template-areas: "inj pro" "con goal"; align-items: start; }
+  .home-lower[data-layout="v1"] { grid-template-areas: "con pro" "inj goal"; align-items: start; }
   .home-lower[data-layout="v2"] { grid-template-areas: "inj con" "pro pro" "goal goal"; }
   /* Goalカードだけは、同じ行の体調カードの高さに合わせて伸ばし、中身を縦中央に寄せる
      （内容を増やさず、短いカードが取り残されて見える段差だけを解消する） */
@@ -1736,7 +1738,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 /* ============ 体組成（体組成タブ：一括貼り付け登録） ============ */
 .comp-note { font-size: 0.82rem; line-height: 1.7; color: var(--text-lo); margin: 0 0 10px; }
 .comp-sub { font-size: 0.8rem; line-height: 1.7; color: var(--text-lo); margin: 0 0 8px; }
-.comp-status { font-size: 0.85rem; line-height: 1.6; color: var(--teal); font-weight: 700; margin: 0 0 10px; }
+.comp-status { font-size: 0.85rem; line-height: 1.6; color: var(--tab-ink); font-weight: 700; margin: 0 0 10px; }
 .comp-textarea { min-height: 150px; font-size: 0.8rem; }
 .comp-spec { min-height: 260px; }
 .comp-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
@@ -1812,7 +1814,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .cond-row-actions { display: flex; gap: 4px; }
 .cond-tabs { display: flex; gap: 6px; margin: 4px 0 8px; }
 .cond-tab { flex: 1; min-height: 40px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.45); color: var(--text-hi); font-family: var(--font-body); font-size: 0.82rem; font-weight: 700; cursor: pointer; }
-.cond-tab.is-active { background: linear-gradient(90deg, var(--teal), var(--dusty-pink)); border-color: transparent; color: #fff; }
+.cond-tab.is-active { background: linear-gradient(90deg, #8f82c9, #c98fae); border-color: transparent; color: #fff; }
 .cond-chip { display: inline-block; font-size: 0.7rem; font-weight: 700; line-height: 1.6; padding: 0 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.06); color: var(--text-hi); }
 .cond-chip-none { background: rgba(80, 160, 140, 0.16); color: #2f7566; }
 .cond-chip-mild { background: rgba(124, 108, 200, 0.14); color: #4a3d8f; }
@@ -1824,47 +1826,60 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--teal); }
 .csv-actions { margin-bottom: 10px; }
 .csv-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .csv-list li { margin: 0; }
-.csv-status { font-size: 0.8rem; line-height: 1.6; color: var(--teal); min-height: 1.2em; margin: 4px 0 0; }
+.csv-status { font-size: 0.8rem; line-height: 1.6; color: var(--tab-ink); min-height: 1.2em; margin: 4px 0 0; }
 .csv-sub { font-size: 0.78rem; color: var(--text-lo); margin: 8px 0 4px; }
 .csv-fallback { margin-top: 4px; }
 
-/* ============ 4タブ（記録・注射・体組成・設定）のテーマ色 ============
+/* ============ 4タブ（記録・注射・体組成・設定）：Body Garden共通の紫 ============
+   以前はタブごとに別の色（teal/lavender/dusty-pink/amber）を割り当てていたが、
+   「4画面がそれぞれ違う色」ではなく「1つのアプリの4画面」に見えるよう、4タブとも
+   同じ紫（注射タブで使っていた --home-heading 系統＝HOMEの注射カードと同じ色）に統一する。
+   washも4タブ共通のごく薄いラベンダー1色にする（settingsの暖色washは廃止）。
    既存の .card の background 定義（var(--card-wash), var(--card-bg)）は変更しない。
    画面ごとに、その手前へ薄い色のレイヤーを1枚追加するだけ（linear-gradient(同色,同色) で
    フラットな色をbackground-imageレイヤーとして重ねる、よくある手法）。
-   色は既存トークン（teal/lavender/dusty-pink/morning-light）の-softバリアントを流用し、
-   新しい色相は作らない。見出し色（--tab-*-ink）は、実際に重なる背景（ページ背景→card-bg→
-   card-wash→このwash）に対してWCAG AA（4.5:1）以上になるよう計算して選んだ値。 */
+   見出し色（--tab-ink）は、実際に重なる背景（4タブ用ページ背景→card-bg→card-wash→
+   このwash）に対してWCAG AA（4.5:1）以上になることを計算・実測の両方で確認済み。 */
 :root {
-  --tab-records-wash: rgba(207, 230, 224, 0.10);     /* teal-soft */
-  --tab-records-ink: #316d60;
-  --tab-injection-wash: rgba(222, 214, 238, 0.10);   /* lavender-soft */
-  --tab-injection-ink: var(--home-heading);          /* HOMEの注射カードと同じ見出し色で継続性を持たせる */
-  --tab-composition-wash: rgba(240, 218, 220, 0.10); /* dusty-pink-soft */
-  --tab-composition-ink: #a34349;
-  --tab-settings-wash: rgba(246, 233, 216, 0.10);    /* morning-light */
-  --tab-settings-ink: #835b21;
+  --tab-wash: rgba(222, 214, 238, 0.10);   /* lavender-soft。4タブ共通 */
+  --tab-ink: var(--home-heading);          /* HOMEの注射カードと同じ紫。4タブ共通 */
+  /* 4タブ（HOMEは対象外）のページ背景。morning-light由来の黄味をやめ、
+     冷たい白〜淡いラベンダーにして、HOMEの青紫世界観につなげる */
+  --tab-page-bg: linear-gradient(180deg, var(--lavender-soft) 0%, #f3f0f8 35%, #f6f5f9 75%);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --tab-records-ink: #a5d4ca;
-    --tab-injection-ink: #d0c6e7;
-    --tab-composition-ink: #e7c0c3;
-    --tab-settings-ink: #e8d2b0;
+    --tab-ink: #d0c6e7;
+    /* ダークモードは、4タブの見た目を変えないよう、従来のbody背景の式をそのまま使う */
+    --tab-page-bg: linear-gradient(180deg, var(--morning-light) 0%, var(--lavender-soft) 30%, var(--bg-0) 70%);
   }
 }
 :root[data-theme="dark"] {
-  --tab-records-ink: #a5d4ca;
-  --tab-injection-ink: #d0c6e7;
-  --tab-composition-ink: #e7c0c3;
-  --tab-settings-ink: #e8d2b0;
+  --tab-ink: #d0c6e7;
+  --tab-page-bg: linear-gradient(180deg, var(--morning-light) 0%, var(--lavender-soft) 30%, var(--bg-0) 70%);
 }
 
-[data-screen="records"] .card { background: linear-gradient(var(--tab-records-wash), var(--tab-records-wash)), var(--card-wash), var(--card-bg); }
-[data-screen="records"] .card-title { color: var(--tab-records-ink); }
-[data-screen="injection"] .card { background: linear-gradient(var(--tab-injection-wash), var(--tab-injection-wash)), var(--card-wash), var(--card-bg); }
-[data-screen="injection"] .card-title { color: var(--tab-injection-ink); }
-[data-screen="composition"] .card { background: linear-gradient(var(--tab-composition-wash), var(--tab-composition-wash)), var(--card-wash), var(--card-bg); }
-[data-screen="composition"] .card-title { color: var(--tab-composition-ink); }
-[data-screen="settings"] .card { background: linear-gradient(var(--tab-settings-wash), var(--tab-settings-wash)), var(--card-wash), var(--card-bg); }
-[data-screen="settings"] .card-title { color: var(--tab-settings-ink); }
+body:has([data-screen="records"]:not([hidden])),
+body:has([data-screen="injection"]:not([hidden])),
+body:has([data-screen="composition"]:not([hidden])),
+body:has([data-screen="settings"]:not([hidden])) {
+  background: var(--tab-page-bg);
+}
+
+[data-screen="records"] .card,
+[data-screen="injection"] .card,
+[data-screen="composition"] .card,
+[data-screen="settings"] .card {
+  background: linear-gradient(var(--tab-wash), var(--tab-wash)), var(--card-wash), var(--card-bg);
+}
+[data-screen="records"] .card-title,
+[data-screen="injection"] .card-title,
+[data-screen="composition"] .card-title,
+[data-screen="settings"] .card-title {
+  color: var(--tab-ink);
+}
+/* .cond-msg はHOMEの体調カードとも共有するクラスなので、記録タブの分だけを紫にする
+   （HOMEの体調カードの .cond-msg は従来どおり var(--teal) のまま、変更しない） */
+[data-screen="records"] .cond-msg {
+  color: var(--tab-ink);
+}
