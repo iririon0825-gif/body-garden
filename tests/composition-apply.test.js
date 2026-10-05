@@ -185,6 +185,25 @@ test("体組成計のBMIとアプリ計算のBMIが違うときは警告のみ�
   assert.equal(Math.round(Calc.bmi(rec.weight, s.profile.heightCm) * 10) / 10, 25.5, "判定用のBMIはアプリ計算（体重と身長から）");
 });
 
+test("BMI差異だけなら確認チェック不要（16項目正常読取＋測定日あり＋BMI差異のみ）", () => {
+  const { B, s } = setup();
+  const text = B.sampleText().replace("BMI: 25.5", "BMI: 24.0");
+  const p = plan(B, s, text, { date: "2026-10-02" });
+  assert.ok(p.a.warnings.some((w) => w.code === "BMI_DIFF"), "表示用の警告メッセージ自体は残る");
+  assert.equal(p.a.needsAck, false, "BMI差異だけでは確認チェックを必須にしない");
+  assert.equal(B.applyImport(s, p.parsed, { ...p.decisions, acknowledged: false }, NOW).ok, true, "確認チェックが未選択でも保存できる");
+});
+
+test("BMI差異に加えて他の警告（未読取項目）があるときは、確認チェックが引き続き必要", () => {
+  const { B, s } = setup();
+  const text = B.sampleText().replace("BMI: 25.5", "BMI: 24.0").replace("骨量: 2.30 kg", "骨量: 未読取");
+  const p = plan(B, s, text, { date: "2026-10-02" });
+  assert.ok(p.a.warnings.some((w) => w.code === "BMI_DIFF"));
+  assert.equal(p.a.needsAck, true, "未読取項目があるので、BMI差異とは別の理由で確認が必要");
+  assert.equal(B.applyImport(s, p.parsed, { ...p.decisions, acknowledged: false }, NOW).code, "ACK_REQUIRED");
+  assert.equal(B.applyImport(s, p.parsed, { ...p.decisions, acknowledged: true }, NOW).ok, true);
+});
+
 test("測定日の警告: 30日より前・開始日より前は警告（確認が必要）", () => {
   const { B, s } = setup();
   const old = B.assess(s, B.parse(B.sampleText(), NOW), "2026-08-01", NOW);

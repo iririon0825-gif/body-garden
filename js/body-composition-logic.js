@@ -342,7 +342,10 @@ const BodyCompositionLogic = {
 
     const allWarnings = [...parsed.warnings, ...warnings];
     const unsaved = parsed.items.filter((i) => !this._savable(i)).length;
-    const needsAck = allWarnings.length > 0 || parsed.counts.suspect > 0 || unsaved > 0 || parsed.unrecognizedLines.length > 0 || parsed.dateStatus !== "ok";
+    // BMI差異（BMI_DIFF）は、保存事故ではなく「体組成計のBMIとアプリ計算のBMIを意図的に別管理している」ことによる
+    // 差なので、これだけでは「確認しました」のチェックを必須にしない（表示はそのまま warnings に残す）
+    const ackWarnings = allWarnings.filter((w) => w.code !== "BMI_DIFF");
+    const needsAck = ackWarnings.length > 0 || parsed.counts.suspect > 0 || unsaved > 0 || parsed.unrecognizedLines.length > 0 || parsed.dateStatus !== "ok";
     return {
       date,
       existing: rec,
