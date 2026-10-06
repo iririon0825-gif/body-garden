@@ -485,6 +485,55 @@ const BodyCompositionLogic = {
       .map((r) => ({ ...r, bodyComposition: { ...EMPTY_BODY_COMPOSITION, ...(r.bodyComposition && typeof r.bodyComposition === "object" ? r.bodyComposition : {}) } }));
   },
 
+  // ============ トレンド（体組成タブ：読み取り専用の時系列表示） ============
+  // dailyRecordsの既存データをそのまま読むだけ。保存・schema変更は一切しない。
+  // 「何kgになったか」は体重グラフ、「何が減っているか」はここ、という役割分担。
+  // mixed:true（2回分の測定が混ざった記録）でも、その日の最終的な保存値をそのまま1点として使う
+  // （断定的な評価・増減の判定はしない。時系列の表示のみ）
+
+  TREND_FIELDS: ["bodyFatMass", "skeletalMuscleMass", "bodyFatPct"],
+
+  _addDays(iso, n) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + n);
+    return this._ymd(dt);
+  },
+  _enumerateDays(startIso, endIso) {
+    const [y1, m1, d1] = startIso.split("-").map(Number);
+    const [y2, m2, d2] = endIso.split("-").map(Number);
+    const out = [];
+    for (let dt = new Date(y1, m1 - 1, d1), end = new Date(y2, m2 - 1, d2); dt <= end; dt.setDate(dt.getDate() + 1)) {
+      out.push(this._ymd(dt));
+    }
+    return out;
+  },
+
+  // 1指標ぶんの記録済みの点だけを、日付昇順で返す（未記録・削除済み＝nullの日は自然に含まれない。1日1点）
+  trendPoints(state, fieldKey) {
+    return (state.dailyRecords || [])
+      .filter((r) => r && r.bodyComposition && r.bodyComposition[fieldKey] != null)
+      .map((r) => ({ date: r.date, value: r.bodyComposition[fieldKey] }))
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  },
+
+  // 表示期間（"7"|"30"|"all"）の日付列と、その範囲内の値（記録のない日はnull＝線をつながない。補間しない）
+  trendSeries(state, fieldKey, range, now = new Date()) {
+    const points = this.trendPoints(state, fieldKey);
+    if (points.length === 0) return { points: [], days: [], data: [] };
+    const today = this._ymd(now);
+    const lastDate = points[points.length - 1].date;
+    const endDate = lastDate > today ? lastDate : today;
+    const period = range === "7" || range === "30" ? Number(range) : null;
+    const startDate = period ? this._addDays(today, -(period - 1)) : points[0].date;
+    const days = this._enumerateDays(startDate, period ? today : endDate);
+    const inWindow = points.filter((p) => p.date >= days[0] && p.date <= days[days.length - 1]);
+    const byDay = {};
+    inWindow.forEach((p) => (byDay[p.date] = p.value));
+    const data = days.map((d) => (d in byDay ? byDay[d] : null));
+    return { points: inWindow, days, data };
+  },
+
   // ============ 登録用テキストの仕様（オルグレイに渡す）と、サンプル ============
 
   SAMPLE_VALUES: {

@@ -11,6 +11,9 @@ const CompositionUI = {
   // 下書きはメモリ上にだけ置く（localStorage には保存しない）
   _draft: null,
   _status: "",
+  // 体組成トレンドの表示状態もメモリ上のみ（保存データには書かない）
+  _trend: { metric: "bodyFatMass", range: "30" },
+  TREND_LABELS: { bodyFatMass: "体脂肪量", skeletalMuscleMass: "骨格筋量", bodyFatPct: "体脂肪率" },
 
   _now() {
     return new Date();
@@ -94,6 +97,7 @@ const CompositionUI = {
     try {
       el.innerHTML = this._pageHtml(state);
       this._bind(state);
+      if (typeof Charts !== "undefined") Charts.renderCompositionTrendChart("chart-composition-trend", state, this._trend.metric, this._trend.range);
     } catch (e) {
       console.error("[BodyGarden] 体組成タブを表示できません", e);
       el.innerHTML = `<section class="card"><p class="card-title">体組成</p><p class="form-error">体組成の画面を表示できませんでした。設定画面からバックアップを書き出してから、データの内容を確認してください。</p></section>`;
@@ -118,7 +122,34 @@ const CompositionUI = {
         </div>
       </section>
       ${d.parsed && d.parsed.ok ? this._previewCard(state) : ""}
+      ${this._trendCard(state)}
       ${this._historyCard(state)}`;
+  },
+
+  // 体組成トレンド（読み取り専用）：体脂肪量・骨格筋量・体脂肪率のうち1指標だけを折れ線で表示する。
+  // 複数指標を同じY軸に重ねない。保存はしない・評価（増減の断定）もしない
+  _trendCard(state) {
+    const t = this._trend;
+    const metricTabs = BodyCompositionLogic.TREND_FIELDS.map(
+      (key) => `<button type="button" class="cond-tab comp-trend-tab${t.metric === key ? " is-active" : ""}" data-trend-metric="${key}">${escapeHtml(this.TREND_LABELS[key])}</button>`
+    ).join("");
+    const rangeTabs = [["7", "7日"], ["30", "30日"], ["all", "全期間"]]
+      .map(([v, label]) => `<button type="button" data-trend-range="${v}" class="${t.range === v ? "is-active" : ""}">${label}</button>`)
+      .join("");
+    return `
+      <section class="card comp-trend-card">
+        <p class="card-title">${UI.lineIcon("records")}体組成トレンド</p>
+        <div class="comp-trend-tabs" role="group" aria-label="指標">${metricTabs}</div>
+        <div class="graph-head comp-trend-head">
+          <span class="comp-trend-period-label">表示期間</span>
+          <div class="chart-range-tabs" role="group" aria-label="表示期間">${rangeTabs}</div>
+        </div>
+        <div class="chart-wrap comp-trend-wrap">
+          <canvas id="chart-composition-trend"></canvas>
+          <p class="chart-empty-msg" id="chart-composition-trend-empty">体組成を記録するとグラフが表示されます</p>
+        </div>
+        <p class="comp-trend-note">体組成値は測定条件によって変動します。長期的な傾向として確認してください。</p>
+      </section>`;
   },
 
   // プレビュー（16項目の確認）
@@ -297,6 +328,18 @@ const CompositionUI = {
     );
     on("comp-save-btn", "click", () => this._confirmSave(state));
     document.querySelectorAll("[data-comp-detail]").forEach((b) => b.addEventListener("click", () => this._showDetail(state, b.dataset.compDetail)));
+    document.querySelectorAll("[data-trend-metric]").forEach((b) =>
+      b.addEventListener("click", () => {
+        this._trend.metric = b.dataset.trendMetric;
+        this.render(state);
+      })
+    );
+    document.querySelectorAll("[data-trend-range]").forEach((b) =>
+      b.addEventListener("click", () => {
+        this._trend.range = b.dataset.trendRange;
+        this.render(state);
+      })
+    );
   },
 
   _parse(state) {

@@ -179,7 +179,132 @@ const Charts = {
       },
     });
   },
+
+  // 体組成タブ：1指標だけの時系列（読み取り専用）。日付・期間ロジックはBodyCompositionLogic.trendSeriesに
+  // 任せ、ここは見た目（Chart.js設定）だけを組み立てる。体重グラフ（chart-weight-home）とは別instanceで、
+  // 互いに干渉しない
+  renderCompositionTrendChart(canvasId, state, fieldKey, range) {
+    const canvas = document.getElementById(canvasId);
+    const emptyMsg = document.getElementById(`${canvasId}-empty`);
+    if (!canvas) return;
+
+    if (this._instances[canvasId]) {
+      this._instances[canvasId].destroy();
+      delete this._instances[canvasId];
+    }
+
+    const field = (typeof COMPOSITION_FIELDS !== "undefined" ? COMPOSITION_FIELDS : []).find((f) => f.key === fieldKey);
+    if (!field) return;
+
+    const showMessage = (text) => {
+      canvas.hidden = true;
+      if (emptyMsg) {
+        emptyMsg.textContent = text;
+        emptyMsg.hidden = false;
+      }
+    };
+
+    if (typeof BodyCompositionLogic === "undefined") {
+      showMessage("グラフを表示できません");
+      return;
+    }
+    // 体重グラフ・月経帯と同じ「今日」を使う（別の時計にならないように todayISODate() 基準で揃える）
+    const { days, data } = BodyCompositionLogic.trendSeries(state, fieldKey, range, parseISO(todayISODate()));
+    if (days.length === 0) {
+      showMessage(`${field.label}を記録するとグラフが表示されます`);
+      return;
+    }
+    if (typeof Chart === "undefined") {
+      showMessage("グラフを表示できません（通信できる状態で、もう一度開いてください）");
+      return;
+    }
+    const values = data.filter((v) => v != null);
+    if (values.length === 0) {
+      showMessage("この期間の記録はありません");
+      return;
+    }
+    canvas.hidden = false;
+    if (emptyMsg) emptyMsg.hidden = true;
+
+    const cardStyle = getComputedStyle(canvas);
+    const cv = (name, fallback) => cardStyle.getPropertyValue(name).trim() || fallback;
+    Chart.defaults.color = cv("--chart-text", "#7c756f");
+    Chart.defaults.borderColor = cv("--chart-grid", "rgba(0, 0, 0, 0.08)");
+
+    const period = range === "7" || range === "30" ? Number(range) : null;
+    const axis = computeMetricAxis(values);
+    const spanDays = days.length;
+    const decimals = field.decimals || 0;
+    const unit = field.unit || "";
+
+    this._instances[canvasId] = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: {
+        labels: days,
+        datasets: [
+          {
+            label: field.label,
+            data,
+            borderColor: cv("--chart-line", "#4d4270"),
+            backgroundColor: cv("--chart-line-fill", "rgba(77, 66, 112, 0.12)"),
+            pointRadius: period === null && days.length > 45 ? 2 : 3,
+            tension: 0.25,
+            spanGaps: true,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        layout: { padding: { top: 4, right: 6 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => (items.length ? shortDate(items[0].label, spanDays) : ""),
+              label: (item) => `${field.label}: ${Number(item.raw).toFixed(decimals)}${unit}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            min: axis.min,
+            max: axis.max,
+            ticks: {
+              stepSize: axis.step,
+              callback: (v) => `${Number(v).toFixed(decimals ? 1 : 0)}${unit}`,
+            },
+          },
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: period === 7 ? 7 : 6,
+              callback(value) {
+                return shortDate(this.getLabelForValue(value), spanDays);
+              },
+            },
+          },
+        },
+      },
+    });
+  },
 };
+
+// 体組成指標の縦軸：目標値などの考慮は不要なぶん、体重グラフよりシンプル。データの最小〜最大に
+// 余白を付け、きりのよい刻み幅を選ぶ（kg・%のどちらでも使える単位非依存のロジック）
+function computeMetricAxis(values) {
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const rawStep = Math.max(hi - lo, 0.5) / 4;
+  const candidates = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50];
+  const step = candidates.find((s) => s >= rawStep) || 50;
+  const min = Math.floor((lo - step * 0.3) / step) * step;
+  const max = Math.ceil((hi + step * 0.3) / step) * step;
+  return { min: round2(min), max: round2(max), step };
+}
 
 // 縦軸：7日=0.5kg刻み、30日=1kg刻み、全期間=開始体重・記録値・目標値を含めて自動調整。
 // 小さな変化を誇張しすぎないよう、期間ごとに最小の表示幅を確保する

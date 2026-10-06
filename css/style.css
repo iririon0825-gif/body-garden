@@ -1755,6 +1755,31 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
 .comp-hactions { grid-column: 2; grid-row: 1 / span 2; }
 .comp-detail { margin-bottom: 10px; }
 
+/* ============ 体組成トレンド（体組成タブ：読み取り専用。HOMEの濃い紫graph-cardは使わず、
+   通常の明るいカード＋Body Garden共通紫の線にする。4タブの淡ラベンダー基調に馴染ませるため） ============ */
+.comp-trend-card {
+  /* charts.jsがcanvasの祖先からこの名前で読む。HOME（--chart-line: #d9c8ff 等）とは別の、
+     このカード専用の値になる（.graph-cardの外なので干渉しない） */
+  --chart-text: var(--text-lo);
+  --chart-grid: rgba(77, 66, 112, 0.1);
+  --chart-line: var(--home-heading);
+  --chart-line-fill: rgba(77, 66, 112, 0.12);
+}
+.comp-trend-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.comp-trend-tab { flex: 1; font-size: 0.78rem; padding: 7px 8px; }
+.comp-trend-head { margin: 2px 0 6px; }
+.comp-trend-period-label { font-size: 0.72rem; color: var(--text-lo); }
+/* .chart-range-tabsは元々.graph-card（濃い紫背景）向けの配色。ここは明るいカードなので上書きする */
+.comp-trend-card .chart-range-tabs { background: rgba(77, 66, 112, 0.08); }
+.comp-trend-card .chart-range-tabs button { color: var(--text-lo); }
+.comp-trend-card .chart-range-tabs button.is-active { background: linear-gradient(90deg, #8f82c9, #c98fae); color: #fff; }
+.comp-trend-wrap { height: 128px; }
+.comp-trend-wrap .chart-empty-msg { color: var(--text-lo); }
+.comp-trend-note { font-size: 0.7rem; line-height: 1.5; color: var(--text-lo); margin: 8px 0 0; }
+@media (min-width: 700px) {
+  .comp-trend-wrap { height: 160px; }
+}
+
 /* ============ 体調・副作用（HOMEカード・記録タブ） ============ */
 .cond-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 8px; }
 .cond-head .card-title { margin-bottom: 4px; }
