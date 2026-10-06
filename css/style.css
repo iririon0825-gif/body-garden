@@ -1212,7 +1212,9 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
     top: 90px;
     width: 162px;
     height: 160px;
-    object-fit: cover;
+    /* 曜日別yuraRi 7枚は正方形・人物位置統一の素材のため、croppingせずそのまま収める
+       （contain）。7枚とも同じ枠・同じ基準線になる */
+    object-fit: contain;
     object-position: 50% 0%;
     pointer-events: none;
     /* モックは腕・手元のティーカップまで見える。枠を少し伸ばし、フェードを下端の約20%に絞る */
@@ -1601,7 +1603,8 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
     margin: 0;
     width: 41.4cqw;
     height: 31.7cqw;
-    object-fit: cover;
+    /* 曜日別yuraRi 7枚は正方形・人物位置統一の素材のため、croppingせずそのまま収める（contain） */
+    object-fit: contain;
     object-position: 50% 0%;
     pointer-events: none;
     -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);

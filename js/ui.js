@@ -264,6 +264,13 @@ const UI = {
     // 375px比較試作用の切替（URLクエリ）。採用確定後に撤去する。
     //   ?lower=v1|v2 下部カード配置 / ?palette=a|b 配色 / ?bg=magic|magic2|page|fixed|top 背景方式
     //   bg=magic（既定・新背景v3の仮配置。正式採用前）／magic2=v2背景／page・fixed・top=旧背景
+    // HOME人物（yuraRi）：端末ローカル日時の曜日だけで画像を切り替える（記録内容による切替はしない）。
+    // 毎回のrenderHome呼び出しで都度評価するため、日付をまたいだ再描画（ConditionUI.watchDateの仕組み）で
+    // 自然に更新される。新たな常駐タイマーは追加しない
+    const weekday = new Date().getDay();
+    const heroPersonSrc = weekdayCharacterImage(weekday);
+    const isWednesday = weekday === 3; // 水曜日画像にはエニシャが含まれるため、別のエニシャを二重に出さない
+
     const q = new URLSearchParams(location.search);
     const lowerLayout = q.get("lower") === "v2" ? "v2" : "v1";
     el.dataset.palette = q.get("palette") === "b" ? "b" : "a";
@@ -302,8 +309,8 @@ const UI = {
             </div>
           </section>
         </div>
-        <img class="hero-person" src="${IMAGE_ASSETS.decoYurariFigure}" alt="" onerror="this.remove()" />
-        <img class="hero-enisha" src="${IMAGE_ASSETS.decoEnisha}" alt="" onerror="this.remove()" />
+        <img class="hero-person" src="${heroPersonSrc}" alt="" onerror="this.onerror=null;this.src='${IMAGE_ASSETS.decoYurariFigure}';" />
+        ${isWednesday ? "" : `<img class="hero-enisha" src="${IMAGE_ASSETS.decoEnisha}" alt="" onerror="this.remove()" />`}
         <div class="home-date"><span class="hd-date">${todayLabel}</span><span class="hd-sub">今日も、わたしのペースで</span></div>
       </div>
 

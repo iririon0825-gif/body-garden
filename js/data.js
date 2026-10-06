@@ -345,6 +345,24 @@ const IMAGE_ASSETS = {
   milestoneMaintenance: "assets/body-garden/milestone-maintenance.png",
 };
 
+// HOME人物（yuraRi）の曜日別画像。端末ローカル日時の曜日だけで切り替える
+// （体調・月経・体重・Protein・注射などの記録内容による切替はしない。感情推測ロジックは持たない）。
+// 水曜日の画像にはエニシャが画像内に含まれているため、別途エニシャを重ねて描画しない。
+// キーは Date.prototype.getDay() の値（0=日曜〜6=土曜）と一致させている
+const WEEKDAY_CHARACTER_IMAGES = {
+  0: "assets/body-garden/yurari-sun.png",
+  1: "assets/body-garden/yurari-mon.png",
+  2: "assets/body-garden/yurari-tue.png",
+  3: "assets/body-garden/yurari-wed.png",
+  4: "assets/body-garden/yurari-thu.png",
+  5: "assets/body-garden/yurari-fri.png",
+  6: "assets/body-garden/yurari-sat.png",
+};
+// day: Date.prototype.getDay() の値を想定。0〜6以外（想定外の入力）は従来画像にフォールバックする
+function weekdayCharacterImage(day) {
+  return WEEKDAY_CHARACTER_IMAGES[day] || IMAGE_ASSETS.decoYurariFigure;
+}
+
 // 体調の3段階（なし／軽い／あり）の顔アイコン画像。制作中のため未設定（null）。
 // 画像ができたら、ここにパスを入れるだけで枠の中に表示される（例: "assets/body-garden/face-none.png"）。
 // 未設定・読み込めないときは、固定の枠と文字ラベルだけを表示する。絵文字や仮のイラストで代用しない。

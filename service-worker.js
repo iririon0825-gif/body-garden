@@ -11,7 +11,7 @@
 // オフライン用の画面一式は、install のときに（HTML と js/css を同時に）入れ替わる。
 // 公開のたびに、このファイルの CACHE_VERSION を上げること（上げないと install が走らず、オフライン用の一式が更新されない）。
 
-const CACHE_VERSION = "body-garden-v23";
+const CACHE_VERSION = "body-garden-v24";
 
 // index.html から取れないもの（HTML自身・マニフェスト・フォント・PWAアイコン・体調の顔アイコン）
 const STATIC_URLS = [
@@ -27,6 +27,14 @@ const STATIC_URLS = [
   "assets/body-garden/condition-none.png",
   "assets/body-garden/condition-mild.png",
   "assets/body-garden/condition-moderate.png",
+  // HOME人物（yuraRi）の曜日別画像。常にどれか1枚は必ず表示されるため、初回インストール時から確実に使えるようにする
+  "assets/body-garden/yurari-mon.png",
+  "assets/body-garden/yurari-tue.png",
+  "assets/body-garden/yurari-wed.png",
+  "assets/body-garden/yurari-thu.png",
+  "assets/body-garden/yurari-fri.png",
+  "assets/body-garden/yurari-sat.png",
+  "assets/body-garden/yurari-sun.png",
 ];
 
 // 外部ライブラリ（オフラインでもグラフを描くため）。取得できなくてもインストールは失敗させない
