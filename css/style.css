@@ -1764,6 +1764,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
   --chart-grid: rgba(77, 66, 112, 0.1);
   --chart-line: var(--home-heading);
   --chart-line-fill: rgba(77, 66, 112, 0.12);
+  --chart-target: var(--lavender); /* たんぱく質トレンドの「現在の目標」破線。控えめな紫で、棒グラフより目立たせない */
 }
 .comp-trend-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
 .comp-trend-tab { flex: 1; font-size: 0.78rem; padding: 7px 8px; }

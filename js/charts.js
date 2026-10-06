@@ -291,7 +291,122 @@ const Charts = {
       },
     });
   },
+
+  // 記録タブ：たんぱく質トレンド（読み取り専用）。日別合計を棒グラフ、現在の目標量を破線（flatLine流用）で重ねる。
+  // ProteinLogic.trendSeriesは「記録のない日=null」を返すため、その日は棒を描かない（0gに補完しない）
+  renderProteinTrendChart(canvasId, state, range) {
+    const canvas = document.getElementById(canvasId);
+    const emptyMsg = document.getElementById(`${canvasId}-empty`);
+    if (!canvas) return;
+
+    if (this._instances[canvasId]) {
+      this._instances[canvasId].destroy();
+      delete this._instances[canvasId];
+    }
+
+    const showMessage = (text) => {
+      canvas.hidden = true;
+      if (emptyMsg) {
+        emptyMsg.textContent = text;
+        emptyMsg.hidden = false;
+      }
+    };
+
+    if (typeof ProteinLogic === "undefined") {
+      showMessage("グラフを表示できません");
+      return;
+    }
+    const { days, data } = ProteinLogic.trendSeries(state, range, parseISO(todayISODate()));
+    if (days.length === 0) {
+      showMessage("たんぱく質を記録するとグラフが表示されます");
+      return;
+    }
+    if (typeof Chart === "undefined") {
+      showMessage("グラフを表示できません（通信できる状態で、もう一度開いてください）");
+      return;
+    }
+    const values = data.filter((v) => v != null);
+    if (values.length === 0) {
+      showMessage("この期間の記録はありません");
+      return;
+    }
+    canvas.hidden = false;
+    if (emptyMsg) emptyMsg.hidden = true;
+
+    const cardStyle = getComputedStyle(canvas);
+    const cv = (name, fallback) => cardStyle.getPropertyValue(name).trim() || fallback;
+    Chart.defaults.color = cv("--chart-text", "#7c756f");
+    Chart.defaults.borderColor = cv("--chart-grid", "rgba(0, 0, 0, 0.08)");
+
+    const period = range === "7" || range === "30" ? Number(range) : null;
+    const target = state.profile && typeof state.profile.proteinTarget === "number" ? state.profile.proteinTarget : null;
+    const axis = computeProteinAxis(values, target);
+    const spanDays = days.length;
+
+    const datasets = [
+      {
+        type: "bar",
+        label: "たんぱく質",
+        data,
+        backgroundColor: cv("--chart-line", "#4d4270"),
+        borderRadius: 3,
+        maxBarThickness: period === 7 ? 22 : period === 30 ? 10 : 6,
+      },
+    ];
+    if (target != null) {
+      // 全体のchart typeは"bar"なので、折れ線にするデータセットだけ明示的にtype: "line"にする
+      datasets.push({ type: "line", ...flatLine(`現在の目標 ${target}g`, target, days.length, cv("--chart-target", "#b7a9d6"), true) });
+    }
+
+    this._instances[canvasId] = new Chart(canvas.getContext("2d"), {
+      type: "bar",
+      data: { labels: days, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        layout: { padding: { top: 4, right: 6 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => (items.length ? shortDate(items[0].label, spanDays) : ""),
+              label: (item) => (item.dataset.type === "bar" ? `たんぱく質: ${Number(item.raw).toFixed(1)}g` : item.dataset.label),
+            },
+          },
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: axis.max,
+            ticks: { stepSize: axis.step, callback: (v) => `${Number(v).toFixed(0)}g` },
+          },
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: period === 7 ? 7 : 6,
+              callback(value) {
+                return shortDate(this.getLabelForValue(value), spanDays);
+              },
+            },
+          },
+        },
+      },
+    });
+  },
 };
+
+// たんぱく質トレンドの縦軸：棒グラフなので0始まり。実績の最大値と「現在の目標」の両方が収まるように、
+// きりのよい刻み幅を選ぶ
+function computeProteinAxis(values, target) {
+  const hi = Math.max(...values, target || 0);
+  const rawStep = Math.max(hi, 10) / 4;
+  const candidates = [5, 10, 20, 25, 50, 100];
+  const step = candidates.find((s) => s >= rawStep) || 100;
+  const max = Math.ceil((hi + step * 0.2) / step) * step;
+  return { max: round2(max), step };
+}
 
 // 体組成指標の縦軸：目標値などの考慮は不要なぶん、体重グラフよりシンプル。データの最小〜最大に
 // 余白を付け、きりのよい刻み幅を選ぶ（kg・%のどちらでも使える単位非依存のロジック）
