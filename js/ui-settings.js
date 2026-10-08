@@ -1,5 +1,5 @@
 // Body Garden — 設定画面（初期プロフィール・Goal1/Goal2）
-// 身長・開始日・開始体重の変更は過去表示の再計算につながるため、保存時に確認を挟む。
+// 身長・利用開始日・開始体重の変更は過去表示の再計算につながるため、保存時に確認を挟む。
 
 const SettingsUI = {
   _draft: null,
@@ -33,8 +33,8 @@ const SettingsUI = {
             <input type="number" step="0.1" id="f-heightCm" value="${d.profile.heightCm}" />
           </label>
           <label class="form-field">
-            <span>開始日</span>
-            <input type="date" id="f-startDate" value="${d.profile.startDate || ""}" max="${todayISODate()}" />
+            <span>利用開始日</span>
+            <input type="date" id="f-startDate" value="${d.profile.startDate || ""}" min="2000-01-01" max="${todayISODate()}" />
           </label>
           <label class="form-field">
             <span>開始体重 (kg)</span>
@@ -49,6 +49,7 @@ const SettingsUI = {
             <input type="number" step="0.1" id="f-bmiLowerLine" value="${d.profile.bmiLowerLine}" />
           </label>
         </div>
+        <p class="profile-hint">利用開始日は、HOMEの「利用開始○日目」の基準です。注射の初回投与日（注射タブに表示）とは別で、注射の記録から自動で決まります。</p>
       </section>
 
       <section class="card">
@@ -175,9 +176,8 @@ const SettingsUI = {
     if (!validateRange(d.profile.bmiMaintenanceAlert, VALIDATION_RANGES.bmi) || !validateRange(d.profile.bmiLowerLine, VALIDATION_RANGES.bmi)) {
       return this._fail(state, `BMIガードレール値は${VALIDATION_RANGES.bmi.min}〜${VALIDATION_RANGES.bmi.max}の範囲で入力してください。`);
     }
-    if (!d.profile.startDate || Calc.isFutureDate(d.profile.startDate)) {
-      return this._fail(state, "開始日は今日以前の日付を入力してください。");
-    }
+    const startDateError = this._startDateError(d.profile.startDate);
+    if (startDateError) return this._fail(state, startDateError);
     const goal1Range = d.goal1.type === "bmi" ? VALIDATION_RANGES.bmi : VALIDATION_RANGES.weightKg;
     if (!validateRange(d.goal1.value, goal1Range)) {
       return this._fail(state, "Goal1の値が範囲外です。");
@@ -203,6 +203,15 @@ const SettingsUI = {
     } else {
       apply();
     }
+  },
+
+  // 利用開始日（profile.startDate）の検証。JSONバックアップの復元が受け付ける形（Backup._isRealISODate：
+  // 実在するカレンダー日・2000〜2100年）と揃える。画面で保存できた日付が、あとで復元できなくなるのを防ぐため
+  _startDateError(value) {
+    if (!value) return "利用開始日を入力してください。";
+    if (!Backup._isRealISODate(value)) return "利用開始日は、実在する日付（2000〜2100年）で入力してください。";
+    if (Calc.isFutureDate(value)) return "利用開始日は今日以前の日付を入力してください。";
+    return null;
   },
 
   _fail(state, message) {

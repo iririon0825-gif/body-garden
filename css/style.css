@@ -1927,3 +1927,6 @@ body:has([data-screen="settings"]:not([hidden])) {
 .cycle-row-memo { font-size: 0.8rem; line-height: 1.5; margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-lo); }
 .cycle-row-actions { display: flex; gap: 8px; margin-top: 4px; }
 .cycle-chip { display: inline-block; font-size: 0.7rem; font-weight: 700; line-height: 1.6; padding: 0 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.06); color: var(--text-hi); }
+
+/* 設定：初期プロフィールの補足（利用開始日と注射の初回投与日は別、の一文） */
+.profile-hint { font-size: 0.76rem; line-height: 1.6; color: var(--text-lo); margin: 8px 0 0; }
