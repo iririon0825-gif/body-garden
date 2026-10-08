@@ -942,6 +942,22 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
   .home-grid-2col {
     grid-template-columns: 1fr 1fr;
   }
+  /* 広い画面も、375px（下の@media max-width:699px）と同じ「左右独立stack」にする。
+     左＝体調→次回注射→Goal、右＝Protein（食品が増えても、注射・Goalの位置は変わらない） */
+  .home-lower[data-layout="v1"] {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "con pro" "inj pro" "goal pro";
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .home-lower[data-layout="v1"] > .home-grid-2col { display: contents; }
+  .home-lower[data-layout="v1"] .condition-card { grid-area: con; }
+  .home-lower[data-layout="v1"] .injection-card { grid-area: inj; }
+  .home-lower[data-layout="v1"] .protein-card { grid-area: pro; }
+  .home-lower[data-layout="v1"] .goal-status-card { grid-area: goal; }
 }
 
 /* HOME画面のみ、完成モックの面積配分に合わせてコンテナ幅を広げる。
@@ -1356,7 +1372,10 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
   .home-lower .goal-status-card { grid-area: goal; }
   /* V1（完成モック型・採用基準）：2カラムを維持し、カードの高さは内容に応じて独立させる
      （stretchを解除。登録食品が増えても、左の注射カードに空のパネルが伸びない） */
-  .home-lower[data-layout="v1"] { grid-template-areas: "con pro" "inj goal"; align-items: start; }
+  /* 左右を独立した縦stackにする：左＝体調→次回注射→Goal、右＝Protein。Proteinが食品の追加で伸びても、
+     注射・Goalの開始位置は引っ張られない（行ごとのgridだと、行の高さが背の高い側に揃い、左に空白ができる）。
+     Proteinは3行ぶんをまたぎ、余った高さは最後の1fr行（Goalの行）が吸収する */
+  .home-lower[data-layout="v1"] { grid-template-areas: "con pro" "inj pro" "goal pro"; grid-template-rows: auto auto 1fr; align-items: start; }
   .home-lower[data-layout="v2"] { grid-template-areas: "inj con" "pro pro" "goal goal"; }
   /* Goalカードだけは、同じ行の体調カードの高さに合わせて伸ばし、中身を縦中央に寄せる
      （内容を増やさず、短いカードが取り残されて見える段差だけを解消する） */
@@ -1366,6 +1385,8 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
     flex-direction: column;
     justify-content: center;
   }
+  /* 左右独立stackでは、Goalは体調カードと同じ行ではなくなる。Proteinの高さぶん余った行へ引き伸ばさない */
+  .home-lower[data-layout="v1"] .goal-status-card { align-self: start; }
 
   .home-lower .card {
     padding: 12px;

@@ -231,11 +231,20 @@ const InjectionUI = {
         <div class="inj-actions"><button class="btn-primary" id="inj-register-btn">予定を登録</button></div>`;
     }
 
+    // 初回投与日：既存の投与済み記録のうち最も古いものから導出する（保存しない・設定項目なし）。
+    // Body Garden開始日（HOMEの「開始から○日目」）とは別の概念
+    const firstDate = L.firstAdministeredDate(state);
+    const sinceFirst = L.daysSinceFirst(state, today);
+    const firstLine = firstDate
+      ? `<p class="inj-sub" id="inj-first-dose">初回投与：${escapeHtml(L.formatFullDate(firstDate))}${sinceFirst !== null ? `　投与開始から${sinceFirst + 1}日目` : ""}</p>`
+      : "";
+
     // 定例スケジュール
     const wd = regular ? L.WEEKDAYS[regular.weekday] : null;
     const scheduleCard = `
       <section class="card inj-card">
         <p class="card-title">${UI.lineIcon("injection")}定例の投与スケジュール</p>
+        ${firstLine}
         ${
           regular
             ? `<p class="inj-big">毎週${wd}曜日　${this._tl(regular.time)}</p>

@@ -102,6 +102,11 @@ const InjectionLogic = {
     const thisYear = today ? Number(today.slice(0, 4)) : new Date().getFullYear();
     return y === thisYear ? `${m}/${d}（${wd}）` : `${y}/${m}/${d}（${wd}）`;
   },
+  // 年を常に含む形（初回投与日のように、一度きりの基準日を明示したいとき）
+  formatFullDate(s) {
+    const [y, m, d] = s.split("-").map(Number);
+    return `${y}/${m}/${d}（${this.WEEKDAYS[this.weekdayOf(s)]}）`;
+  },
 
   // ============ 72時間の判定（4種類。それぞれ別の関数） ============
 
@@ -162,6 +167,23 @@ const InjectionLogic = {
   },
   closed(state) {
     return state.injections.filter((r) => r.status === "administered" || r.status === "skipped").sort((a, b) => this._cmpDt(a, b));
+  },
+  // 初回投与日（導出のみ・保存しない）。「初回」を示す専用フィールドは無いため、実際に「投与済み」の記録のうち
+  // 最も古いものを使う。予定・見送り（打ち忘れ）は含めない。Body Garden開始日（profile.startDate）とは別の概念
+  firstAdministered(state) {
+    const list = this.administered(state);
+    return list.length ? list[0] : null;
+  },
+  firstAdministeredDate(state) {
+    const first = this.firstAdministered(state);
+    return first ? first.administeredAt : null;
+  },
+  // 初回投与日から数えた日数（初回投与日＝0日）。初回投与日が無い・今日より後なら null
+  daysSinceFirst(state, today) {
+    const d = this.firstAdministeredDate(state);
+    if (!d || !this.isYmd(today)) return null;
+    const n = this.diffDays(d, today);
+    return n >= 0 ? n : null;
   },
   scheduledRecords(state) {
     return state.injections.filter((r) => r.status === "scheduled" && r.scheduledAt).sort((a, b) => this._cmpDt(a, b));

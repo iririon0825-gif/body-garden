@@ -247,6 +247,8 @@ const UI = {
     const currentBmi = Calc.bmi(currentWeight, profile.heightCm);
     const changeKg = Calc.changeKg(currentWeight, profile.startWeight);
     const changePct = Calc.changePct(currentWeight, profile.startWeight);
+    // HOMEの「利用開始○日目」は profile.startDate（Body Gardenの利用開始日）基準。マンジャロの初回投与日
+    // （注射履歴から導出。注射タブに表示）とは別の概念で、混同しない
     const elapsedDays = Calc.elapsedDays(profile.startDate);
 
     const activeGoal = goals.activeGoal === 2 && goals.goal2 ? goals.goal2 : goals.goal1;
@@ -288,7 +290,7 @@ const UI = {
           <p class="home-tagline">整える、続ける、好きになる</p>
           <section class="card hero-stat-card">
             <img class="hero-bouquet" src="${IMAGE_ASSETS.decoWeightBouquet}" alt="" onerror="this.remove()" />
-            <p class="hero-day-line">開始から<strong>${elapsedDays ?? "—"}</strong>日目</p>
+            <p class="hero-day-line">利用開始<strong>${elapsedDays ?? "—"}</strong>日目</p>
             <div class="hero-weight-row">
               <p class="current-weight">${fmt(currentWeight, 2)}<span class="unit">kg</span></p>
               <span class="hero-change-badge">${signedFmt(changeKg, 2)}kg<small>(${signedFmt(changePct, 1)}%)</small></span>
