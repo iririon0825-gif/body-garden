@@ -793,6 +793,31 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
 .inj-olderlist { list-style: none; margin: 0 0 10px; padding: 0; }
 .inj-missed-actions { margin-bottom: 6px; }
 .inj-details summary { cursor: pointer; font-size: 0.8rem; color: var(--text-lo); margin-top: 8px; }
+/* 注射部位（任意）：投与の記録・部位の記録モーダルの4択ボタン（文字のみ。375pxで2列×2行） */
+.inj-site { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-lo); margin-bottom: 12px; }
+.inj-site-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.inj-site-btn {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-hi);
+  cursor: pointer;
+}
+.inj-site-btn--suggested { border-style: dashed; border-color: #8f82c9; }
+.inj-site-btn[aria-checked="true"] { background: linear-gradient(90deg, #8f82c9, #c98fae); border-color: transparent; color: #fff; }
+.inj-site-mark { font-size: 0.68rem; font-weight: 500; line-height: 1.4; padding: 0 8px; border-radius: 999px; background: rgba(143, 130, 201, 0.18); color: #5b4f93; }
+.inj-site-btn[aria-checked="true"] .inj-site-mark { background: rgba(255, 255, 255, 0.28); color: #fff; }
+.inj-site-hint { font-size: 0.78rem; }
 /* HOMEの注射カード: 右の花瓶を避けて、短い行で表示する */
 .inj-home { cursor: pointer; margin-right: 38px; }
 .inj-home-date { font-size: 1.05rem; font-weight: 700; line-height: 1.3; margin: 0 0 2px; font-variant-numeric: tabular-nums; }
@@ -1798,6 +1823,7 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
 .comp-trend-card .chart-range-tabs { background: rgba(77, 66, 112, 0.08); }
 .comp-trend-card .chart-range-tabs button { color: var(--text-lo); }
 .comp-trend-card .chart-range-tabs button.is-active { background: linear-gradient(90deg, #8f82c9, #c98fae); color: #fff; }
+.comp-trend-card .chart-legend { color: var(--text-lo); }
 .comp-trend-wrap { height: 128px; }
 .comp-trend-wrap .chart-empty-msg { color: var(--text-lo); }
 .comp-trend-note { font-size: 0.7rem; line-height: 1.5; color: var(--text-lo); margin: 8px 0 0; }
@@ -1930,3 +1956,38 @@ body:has([data-screen="settings"]:not([hidden])) {
 
 /* 設定：初期プロフィールの補足（利用開始日と注射の初回投与日は別、の一文） */
 .profile-hint { font-size: 0.76rem; line-height: 1.6; color: var(--text-lo); margin: 8px 0 0; }
+
+/* ============ 週刊・月刊ハイライト（記録タブ：読み取り専用）============
+   既存の .cond-tabs/.cond-tab（切替）、.comp-trend-card（グラフのカード）、.btn-secondary（前後ボタン）を使い回す。
+   ここは数値の並べ方と余白だけを足す。書体は共通の1つのまま。375px・1024px（main は最大480px幅）で崩れない構成 */
+.hl-switch { margin: 0 0 10px; }
+.hl-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hl-nav-btn { padding: 8px 10px; font-size: 0.78rem; white-space: nowrap; min-height: 40px; }
+.hl-nav-btn:disabled { opacity: 0.4; cursor: default; }
+.hl-nav-label { flex: 1 1 auto; min-width: 0; margin: 0; text-align: center; font-size: 0.88rem; font-weight: 700; line-height: 1.4; color: var(--tab-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hl-sub { font-size: 0.74rem; line-height: 1.6; color: var(--text-lo); margin: 6px 0 0; }
+.hl-note { font-size: 0.76rem; line-height: 1.6; color: var(--tab-ink); margin: 8px 0 0; }
+.hl-line { font-size: 0.85rem; line-height: 1.6; margin: 4px 0; }
+.hl-big { font-size: 1.05rem; font-weight: 700; line-height: 1.5; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+.hl-big small { font-size: 0.78rem; font-weight: 500; margin-left: 6px; color: var(--text-lo); }
+.hl-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.hl-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hl-stat-label { font-size: 0.72rem; color: var(--text-lo); }
+.hl-stat-value { font-size: 1.02rem; font-weight: 700; line-height: 1.4; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hl-stat-sub { font-size: 0.68rem; line-height: 1.5; color: var(--text-lo); overflow-wrap: anywhere; }
+.hl-goal-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.hl-goal-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); font-size: 0.85rem; }
+.hl-goal-name { font-weight: 700; min-width: 3.4em; }
+.hl-goal-main { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hl-goal-pct { font-size: 0.74rem; color: var(--text-lo); font-variant-numeric: tabular-nums; }
+.hl-comp-block { margin: 8px 0 0; }
+.hl-comp-title { font-size: 0.82rem; font-weight: 700; margin: 0 0 2px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.hl-comp-info { font-size: 0.7rem; font-weight: 500; color: var(--text-lo); font-variant-numeric: tabular-nums; }
+.hl-comp-wrap { height: 110px; }
+.hl-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.hl-list li { padding: 5px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); font-size: 0.85rem; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.hl-discoveries li { border-bottom: none; padding: 3px 0; }
+.hl-subtitle { margin-top: 14px; }
+@media (min-width: 700px) {
+  .hl-comp-wrap { height: 130px; }
+}

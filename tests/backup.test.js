@@ -436,3 +436,68 @@ test("読み込み: 保存データが無い初回起動は初期状態を作る
   assert.equal(s.schemaVersion, 7);
   assert.ok(s.profile.startDate);
 });
+
+// ============ 注射部位（site。任意項目・schemaVersion は 7 のまま） ============
+
+function withInjectionSite(env, site, { omit = false } = {}) {
+  const e = envelopeOf(env, sampleState(env));
+  if (omit) delete e.state.injections[0].site;
+  else e.state.injections[0].site = site;
+  return e;
+}
+
+test("注射部位: 未記録(undefined/null)と既知のIDは通る（警告なし）", () => {
+  const env = loadEnv();
+  for (const site of [null, "rightLowerAbdomen", "leftLowerAbdomen", "rightThigh", "leftThigh"]) {
+    const r = env.Backup.parse(JSON.stringify(withInjectionSite(env, site)), null);
+    assert.equal(r.ok, true, `${site}: ${JSON.stringify(r)}`);
+    assert.ok(!r.warnings.some((w) => w.includes("注射部位")), `${site}: 警告なし`);
+    assert.equal(r.state.injections[0].site, site, "site が保持される");
+  }
+  const r = env.Backup.parse(JSON.stringify(withInjectionSite(env, undefined, { omit: true })), null);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.equal("site" in r.state.injections[0], false, "古いバックアップの記録に site を書き足さない");
+  assert.ok(!r.warnings.some((w) => w.includes("注射部位")));
+});
+
+test("注射部位: 書式は正しいが知らないIDは警告のみ（復元は止めない。値は書き換えない）", () => {
+  const env = loadEnv();
+  const r = env.Backup.parse(JSON.stringify(withInjectionSite(env, "upperArm")), null);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.ok(r.warnings.some((w) => w.includes("注射部位")), JSON.stringify(r.warnings));
+  assert.equal(r.state.injections[0].site, "upperArm", "知らないIDも消さず、4つのどれにも置き換えない");
+});
+
+test("注射部位: 書式が不正（数値・HTMLを含む文字列・空文字・日本語・長すぎ・真偽値・オブジェクト）はエラー", () => {
+  const env = loadEnv();
+  const bad = [1, true, {}, [], "", "右下腹部", '<img src=x onerror=alert(1)>', "right Thigh", "right-thigh", "a".repeat(33), "site1"];
+  for (const site of bad) {
+    const r = env.Backup.parse(JSON.stringify(withInjectionSite(env, site)), null);
+    assert.equal(r.ok, false, `拒否されるべき: ${JSON.stringify(site)}`);
+    assert.equal(r.code, "INVALID_STRUCTURE", `${JSON.stringify(site)}: ${r.code}`);
+    assert.ok(JSON.stringify(r.details).includes("site"), JSON.stringify(r.details));
+  }
+});
+
+test("注射部位: site 付きの状態は 書き出し→読み込み で site が残り、formatVersion/schemaVersion/件数キーは変わらない", () => {
+  const env = loadEnv();
+  const state = sampleState(env);
+  state.injections[0].status = "administered";
+  state.injections[0].administeredAt = "2026-10-08";
+  state.injections[0].administeredTime = "08:23";
+  state.injections[0].dose = 2.5;
+  state.injections[0].site = "leftLowerAbdomen";
+  const e = envelopeOf(env, state);
+  assert.equal(e.formatVersion, 1);
+  assert.equal(e.schemaVersion, 7);
+  assert.deepEqual(Object.keys(e.counts).sort(), ["cycleEntries", "conditionEntries", "dailyRecords", "injections", "proteinEntries", "proteinProducts", "registeredFoods"].sort());
+  const r = env.Backup.parse(exportText(env, state), null);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.equal(r.state.injections[0].site, "leftLowerAbdomen");
+  assert.deepEqual(clone(r.state), clone(state));
+  // 復元まで通しても site が残る（偽の localStorage 上）
+  const ap = env.Backup.applyRestore(r.state);
+  assert.equal(ap.ok, true, JSON.stringify(ap));
+  const saved = JSON.parse(env.ls.getItem(env.STORAGE_KEY));
+  assert.equal(saved.injections[0].site, "leftLowerAbdomen");
+});

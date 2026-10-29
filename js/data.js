@@ -20,6 +20,14 @@ const INJECTION_LONG_GAP_DAYS = 28;
 // 予定日として登録できる範囲（入力ミス防止。医療上の基準ではない）
 const INJECTION_SCHEDULE_MAX_DAYS_AHEAD = 90;
 const INJECTION_COMMENT_MAX = 500;
+// 注射部位（任意項目 site）。保存は英字のID、表示は日本語。この並びがそのままローテーション順
+// （右下腹部→左下腹部→右大腿→左大腿→右下腹部）。一度決めたIDは変えない。「右腹部」「左腹部」とは表記しない
+const INJECTION_SITES = [
+  { id: "rightLowerAbdomen", label: "右下腹部" },
+  { id: "leftLowerAbdomen", label: "左下腹部" },
+  { id: "rightThigh", label: "右大腿" },
+  { id: "leftThigh", label: "左大腿" },
+];
 // 手持ちの注射の本数（初期在庫）。入庫・購入の管理はしない。実際の投与記録（1回につき1本）から残りを計算する
 const INJECTION_STOCK_INITIAL_PENS = 24;
 
@@ -248,6 +256,9 @@ function createEmptyInjection() {
     // 'review'＝在庫の設定時点ですでにあった投与記録。実記録かテスト用か判別できないため、本人が確認するまで数えない、
     // 'counts'＝本人が「使用した分」と確認した、'excluded'＝本人が「使用本数に含めない」と確認した
     stockCount: null,
+    // 注射部位（任意）。null＝未記録、または INJECTION_SITES のID。新しく作る記録だけに入る（既存の記録へ一括で書き込まない。
+    // 項目が無い記録も未記録として扱う）。在庫・次回予定・72時間判定・打ち忘れ判定には一切影響しない
+    site: null,
     comment: "",
     createdAt: null,
     updatedAt: null,

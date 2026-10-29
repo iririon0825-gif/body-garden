@@ -59,14 +59,21 @@ const UI = {
       if (typeof CsvUI !== "undefined") CsvUI.render(this.state);
     }
     if (screenName === "records") {
-      RecordsUI.render(this.state);
-      if (typeof ProteinTrendUI !== "undefined") ProteinTrendUI.render(this.state);
-      if (typeof CycleUI !== "undefined") CycleUI.render(this.state);
-      if (typeof ConditionUI !== "undefined") ConditionUI.renderDetail(this.state);
+      // 記録タブ上部の切替「毎日の記録／週刊／月刊」（週刊・月刊のときは、毎日の記録の4カードを隠して描かない）
+      if (typeof HighlightUI !== "undefined") HighlightUI.render(this.state);
+      if (typeof HighlightUI === "undefined" || HighlightUI.isDaily()) this.renderRecordsDaily();
     }
     if (screenName === "injection" && typeof InjectionUI !== "undefined") InjectionUI.render(this.state);
     if (screenName === "maintenance-prep") this.renderMaintenancePrep();
     if (screenName === "composition" && typeof CompositionUI !== "undefined") CompositionUI.render(this.state);
+  },
+
+  // 記録タブの「毎日の記録」（これまでの記録タブそのまま）
+  renderRecordsDaily() {
+    RecordsUI.render(this.state);
+    if (typeof ProteinTrendUI !== "undefined") ProteinTrendUI.render(this.state);
+    if (typeof CycleUI !== "undefined") CycleUI.render(this.state);
+    if (typeof ConditionUI !== "undefined") ConditionUI.renderDetail(this.state);
   },
 
   // ============ モーダル基盤 ============

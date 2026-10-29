@@ -176,10 +176,17 @@ const CsvLogic = {
     if (r.stockCount === "review") return "確認待ち";
     return "数える"; // null・"counts"・未知の値は、stockSummaryと同じく「数える」側に倒す
   },
+  // 注射部位の表示名。投与済みで、既知のIDのときだけ。未記録・知らないID・見送り・予定は空欄（0や「なし」にしない）
+  _siteLabel(r) {
+    if (r.status !== "administered" || typeof r.site !== "string" || typeof INJECTION_SITES === "undefined") return "";
+    const s = INJECTION_SITES.find((x) => x.id === r.site);
+    return s ? s.label : "";
+  },
   buildInjections(state) {
     const headers = [
       "ID", "状態", "種別", "集計対象（投与済みのみ）", "定例日", "予定日", "予定時刻", "実施日", "実施時刻",
       "用量_mg", "用量を確認", "見送り理由", "72時間判定", "在庫の扱い", "在庫算入", "メモ", "作成日時", "更新日時",
+      "注射部位", // v1.1で末尾に追加（既存の列の名前・順番は変えない）
     ];
     const rows = (state.injections || [])
       .slice()
@@ -213,6 +220,7 @@ const CsvLogic = {
           r.comment || "",
           this._localTs(r.createdAt),
           this._localTs(r.updatedAt),
+          this._siteLabel(r),
         ];
       });
     return { headers, rows };
@@ -330,6 +338,7 @@ const CsvLogic = {
       ["注記", "体調の症状7列は「選択されていない」ことを示すだけで、「症状が無いことを確認した」ことは意味しません（HOMEからの記録は症状を選べません）。"],
       ["注記", "Protein『基準量あたりg』は、ホエイでは標準スプーン数（別列）に対しての量です。1スプーンあたりではありません。"],
       ["注記", "Protein『数量単位（現在の登録）』は書き出し時点の登録名です。記録当時の表記とは異なる場合があります。"],
+      ["注記", "注射部位は v1.1 以降に記録・補完した分だけです。空欄は未記録で、投与しなかったことや部位が無いことを意味しません。"],
       ["注記", "このCSVは分析用です。この内容からアプリへ復元する機能はありません。復元にはJSONバックアップを使ってください。"],
     ];
     return { headers, rows };

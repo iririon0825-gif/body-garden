@@ -395,6 +395,255 @@ const Charts = {
       },
     });
   },
+
+  // ============ 記録タブ：週刊・月刊ハイライト用（期間を指定して描く。読み取り専用） ============
+  // 上の3つの描画関数とは独立した新しい関数。from〜to は端末のローカル日付 "YYYY-MM-DD"。
+  // 横軸は期間の全日。記録の無い日はnull（0に補完しない・線もつなげない）。canvasIdごとに別instance
+
+  // 指定期間の体重グラフ。Goal・BMIガードレールの線と、月経の背景帯をHOMEと同じ部品で重ねる
+  renderPeriodWeightChart(canvasId, state, from, to) {
+    const canvas = document.getElementById(canvasId);
+    const emptyMsg = document.getElementById(`${canvasId}-empty`);
+    const legendEl = document.getElementById(`${canvasId}-legend`);
+    if (!canvas) return;
+
+    if (this._instances[canvasId]) {
+      this._instances[canvasId].destroy();
+      delete this._instances[canvasId];
+    }
+
+    const showMessage = (text) => {
+      canvas.hidden = true;
+      if (emptyMsg) {
+        emptyMsg.textContent = text;
+        emptyMsg.hidden = false;
+      }
+      if (legendEl) legendEl.innerHTML = "";
+    };
+
+    const days = enumerateDays(from, to);
+    const byDay = {};
+    ((state && state.dailyRecords) || []).forEach((r) => {
+      if (r && typeof r.weight === "number" && Number.isFinite(r.weight) && r.date >= from && r.date <= to) byDay[r.date] = r.weight;
+    });
+    const weights = days.filter((d) => d in byDay).map((d) => byDay[d]);
+    if (weights.length === 0) {
+      showMessage("データなし");
+      return;
+    }
+    if (typeof Chart === "undefined") {
+      showMessage("グラフを表示できません（通信できる状態で、もう一度開いてください）");
+      return;
+    }
+    canvas.hidden = false;
+    if (emptyMsg) emptyMsg.hidden = true;
+
+    const weightData = days.map((d) => (d in byDay ? byDay[d] : null));
+    const profile = state.profile || {};
+    const goals = state.goals || {};
+    const cardStyle = getComputedStyle(canvas);
+    const cv = (name, fallback) => cardStyle.getPropertyValue(name).trim() || fallback;
+    const goal1Weight = goals.goal1 ? Calc.goalToWeightKg(goals.goal1, profile.heightCm) : null;
+    const goal2Weight = goals.goal2 ? Calc.goalToWeightKg(goals.goal2, profile.heightCm) : null;
+    const bmi21Weight = Calc.weightForBmi(profile.bmiMaintenanceAlert, profile.heightCm);
+    const bmi20Weight = Calc.weightForBmi(profile.bmiLowerLine, profile.heightCm);
+    const guides = [
+      { label: "Goal1", short: "Goal1", value: goal1Weight, color: cv("--chart-goal1", "#d9a9ac"), dashed: false },
+      { label: "Goal2", short: "Goal2", value: goal2Weight, color: cv("--chart-goal2", "#b7a9d6"), dashed: false },
+      { label: `BMI${profile.bmiMaintenanceAlert}`, short: `BMI${profile.bmiMaintenanceAlert}`, value: bmi21Weight, color: cv("--chart-bmi21", "#e0c68a"), dashed: true },
+      { label: `BMI${profile.bmiLowerLine} LOWER LINE`, short: "LOWER LINE", badge: "LOWER", value: bmi20Weight, color: cv("--chart-bmi20", "#c08a8a"), dashed: true },
+    ].filter((g) => g.value != null && Number.isFinite(g.value));
+
+    // 縦軸は、1週間なら7日用（0.5kg刻み）、それより長ければ30日用（1kg刻み）の範囲を使う
+    const axisPeriod = days.length <= 7 ? 7 : 30;
+    const axis = computeAxis(axisPeriod, weights, []);
+    const inRange = (v) => v >= axis.min && v <= axis.max;
+
+    const datasets = [
+      {
+        label: "体重",
+        data: weightData,
+        borderColor: cv("--chart-line", "#4d4270"),
+        backgroundColor: cv("--chart-line-fill", "rgba(77,66,112,0.12)"),
+        pointRadius: 3,
+        tension: 0.25,
+        spanGaps: false,
+        fill: false,
+      },
+    ];
+    guides.filter((g) => inRange(g.value)).forEach((g) => {
+      datasets.push(flatLine(g.label, g.value, days.length, g.color, g.dashed));
+    });
+
+    if (legendEl) {
+      const swatch = (color, dashed) => `<i class="cl-sw${dashed ? " is-dashed" : ""}" style="--c:${color}"></i>`;
+      const items = [`<span class="cl-item">${swatch(datasets[0].borderColor, false)}体重</span>`];
+      guides.forEach((g) => {
+        if (inRange(g.value)) {
+          items.push(`<span class="cl-item">${swatch(g.color, g.dashed)}${g.short}</span>`);
+        } else {
+          const arrow = g.value < axis.min ? "↓" : "↑";
+          items.push(`<span class="cl-badge" style="--c:${g.color}" title="${g.short}（表示範囲外）">${g.badge || g.short} ${g.value.toFixed(1)}${arrow}</span>`);
+        }
+      });
+      legendEl.innerHTML = items.join("");
+    }
+
+    Chart.defaults.color = cv("--chart-text", "#7c756f");
+    Chart.defaults.borderColor = cv("--chart-grid", "rgba(0, 0, 0, 0.08)");
+
+    // 月経の背景帯（this.bands はHOMEの描画が使う共有の値なので、ここでは書き換えず、このグラフの分だけ作る）
+    const PHASE_FALLBACK = { period: "rgba(199,125,150,0.22)", follicular: "rgba(150,150,220,0.14)", luteal: "rgba(214,160,200,0.14)" };
+    const bands =
+      typeof CycleLogic !== "undefined"
+        ? CycleLogic.bands(state, parseISO(todayISODate())).map((b) => ({ from: b.from, to: b.to, color: cv(`--chart-cycle-${b.phase}`, PHASE_FALLBACK[b.phase]) }))
+        : [];
+
+    const spanDays = days.length;
+    this._instances[canvasId] = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels: days, datasets },
+      plugins: [cycleBandsPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        layout: { padding: { top: 4, right: 6 } },
+        plugins: {
+          legend: { display: false },
+          cycleBands: { bands },
+          tooltip: {
+            callbacks: {
+              title: (items) => (items.length ? shortDate(items[0].label, spanDays) : ""),
+              label: (item) => `${item.dataset.label}: ${Number(item.raw).toFixed(2)}kg`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            min: axis.min,
+            max: axis.max,
+            ticks: { stepSize: axis.step, callback: (v) => `${Number(v).toFixed(axis.step < 1 ? 1 : 0)}kg` },
+          },
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: axisPeriod === 7 ? 7 : 6,
+              callback(value) {
+                return shortDate(this.getLabelForValue(value), spanDays);
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  // 指定期間の体組成1指標（体脂肪量・骨格筋量・体脂肪率など）。記録済みの値だけを描く（推定・計算で補わない）。
+  // 値の無い日はnull（線をつなげない）。期間内に1件も無ければ「データなし」
+  renderPeriodMetricChart(canvasId, state, fieldKey, from, to) {
+    const canvas = document.getElementById(canvasId);
+    const emptyMsg = document.getElementById(`${canvasId}-empty`);
+    if (!canvas) return;
+
+    if (this._instances[canvasId]) {
+      this._instances[canvasId].destroy();
+      delete this._instances[canvasId];
+    }
+
+    const field = (typeof COMPOSITION_FIELDS !== "undefined" ? COMPOSITION_FIELDS : []).find((f) => f.key === fieldKey);
+    if (!field) return;
+
+    const showMessage = (text) => {
+      canvas.hidden = true;
+      if (emptyMsg) {
+        emptyMsg.textContent = text;
+        emptyMsg.hidden = false;
+      }
+    };
+
+    const days = enumerateDays(from, to);
+    const byDay = {};
+    ((state && state.dailyRecords) || []).forEach((r) => {
+      const v = r && r.bodyComposition ? r.bodyComposition[fieldKey] : null;
+      if (typeof v === "number" && Number.isFinite(v) && r.date >= from && r.date <= to) byDay[r.date] = v;
+    });
+    const values = days.filter((d) => d in byDay).map((d) => byDay[d]);
+    if (values.length === 0) {
+      showMessage("データなし");
+      return;
+    }
+    if (typeof Chart === "undefined") {
+      showMessage("グラフを表示できません（通信できる状態で、もう一度開いてください）");
+      return;
+    }
+    canvas.hidden = false;
+    if (emptyMsg) emptyMsg.hidden = true;
+
+    const data = days.map((d) => (d in byDay ? byDay[d] : null));
+    const cardStyle = getComputedStyle(canvas);
+    const cv = (name, fallback) => cardStyle.getPropertyValue(name).trim() || fallback;
+    Chart.defaults.color = cv("--chart-text", "#7c756f");
+    Chart.defaults.borderColor = cv("--chart-grid", "rgba(0, 0, 0, 0.08)");
+
+    const axis = computeMetricAxis(values);
+    const spanDays = days.length;
+    const decimals = field.decimals || 0;
+    const unit = field.unit || "";
+    const tickLimit = spanDays <= 7 ? 7 : 6;
+
+    this._instances[canvasId] = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: {
+        labels: days,
+        datasets: [
+          {
+            label: field.label,
+            data,
+            borderColor: cv("--chart-line", "#4d4270"),
+            backgroundColor: cv("--chart-line-fill", "rgba(77, 66, 112, 0.12)"),
+            pointRadius: 3,
+            tension: 0.25,
+            spanGaps: false,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        layout: { padding: { top: 4, right: 6 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => (items.length ? shortDate(items[0].label, spanDays) : ""),
+              label: (item) => `${field.label}: ${Number(item.raw).toFixed(decimals)}${unit}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            min: axis.min,
+            max: axis.max,
+            ticks: { stepSize: axis.step, callback: (v) => `${Number(v).toFixed(decimals ? 1 : 0)}${unit}` },
+          },
+          x: {
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: tickLimit,
+              callback(value) {
+                return shortDate(this.getLabelForValue(value), spanDays);
+              },
+            },
+          },
+        },
+      },
+    });
+  },
 };
 
 // たんぱく質トレンドの縦軸：棒グラフなので0始まり。実績の最大値と「現在の目標」の両方が収まるように、

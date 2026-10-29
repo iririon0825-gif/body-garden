@@ -358,3 +358,63 @@ test("JSONバックアップの検証・件数（Backup.counts/validateState）�
   const v = env.Backup.validateState(clone(s));
   assert.deepEqual(clone(v.errors), []);
 });
+
+// ---------- 注射部位（v1.1）: 末尾に「注射部位」列を1列だけ足す ----------
+
+test("injections: 「注射部位」は最後の列。既存18列の名前と順番は変わらない", () => {
+  const { C, s } = setup();
+  const { headers } = C.buildInjections(s);
+  assert.equal(headers.length, 19);
+  assert.equal(headers[headers.length - 1], "注射部位");
+  assert.deepEqual(clone(headers.slice(0, 18)), [
+    "ID", "状態", "種別", "集計対象（投与済みのみ）", "定例日", "予定日", "予定時刻", "実施日", "実施時刻",
+    "用量_mg", "用量を確認", "見送り理由", "72時間判定", "在庫の扱い", "在庫算入", "メモ", "作成日時", "更新日時",
+  ]);
+  assert.equal(headers.indexOf("更新日時"), 17, "更新日時の直後が注射部位");
+  for (const r of C.buildInjections(s).rows) assert.equal(r.length, 19, "全行が19列");
+});
+
+test("injections: 注射部位は表示名で出す。未記録・知らないID・見送り・予定は空欄（0や「なし」にしない）", () => {
+  const { env, C, s } = setup();
+  const mk = (over) => Object.assign(env.get("createEmptyInjection()"), over);
+  s.injections = [
+    mk({ id: 1, status: "administered", administeredAt: "2026-10-02", dose: 2.5, site: "rightLowerAbdomen" }),
+    mk({ id: 2, status: "administered", administeredAt: "2026-10-08", dose: 2.5, site: "leftLowerAbdomen" }),
+    mk({ id: 3, status: "administered", administeredAt: "2026-10-15", dose: 2.5, site: "rightThigh" }),
+    mk({ id: 4, status: "administered", administeredAt: "2026-10-22", dose: 2.5, site: "leftThigh" }),
+    mk({ id: 5, status: "administered", administeredAt: "2026-10-29", dose: 2.5, site: null }),
+    mk({ id: 6, status: "administered", administeredAt: "2026-11-05", dose: 2.5, site: "upperArm" }),
+    mk({ id: 7, status: "administered", administeredAt: "2026-11-12", dose: 2.5 }),
+    mk({ id: 8, status: "scheduled", scheduledAt: "2026-11-19", site: "rightThigh" }),
+    mk({ id: 9, status: "skipped", regularDate: "2026-11-26", site: "rightThigh" }),
+  ];
+  delete s.injections[6].site; // 項目そのものが無い古い記録
+  const { headers, rows } = C.buildInjections(s);
+  const col = headers.indexOf("注射部位");
+  const byId = Object.fromEntries(rows.map((r) => [r[0], r[col]]));
+  assert.equal(byId[1], "右下腹部");
+  assert.equal(byId[2], "左下腹部");
+  assert.equal(byId[3], "右大腿");
+  assert.equal(byId[4], "左大腿");
+  for (const id of [5, 6, 7, 8, 9]) assert.equal(byId[id], "", `id=${id} は空欄`);
+  // CSV本文としても空欄（0・なし が入らない）
+  const text = C.build(headers, rows);
+  assert.ok(!/,0\r\n|,なし\r\n/.test(text));
+});
+
+test("export_info: 注射部位についての注記が1行ある（既存の注記は残る）", () => {
+  const { C, s } = setup();
+  const notes = C.buildExportInfo(s, new Date(2026, 9, 10, 9, 30)).rows.filter((r) => r[0] === "注記").map((r) => r[1]);
+  assert.ok(notes.includes("注射部位は v1.1 以降に記録・補完した分だけです。空欄は未記録で、投与しなかったことや部位が無いことを意味しません。"));
+  assert.ok(notes.some((n) => n.includes("このCSVは分析用です")), "既存の注記は残る");
+});
+
+test("injections: 部位を付けても状態は変わらない（buildInjections は state を書き換えない）", () => {
+  const { env, C, s } = setup();
+  s.injections[0].site = "rightThigh";
+  const before = JSON.stringify(s);
+  C.buildInjections(s);
+  C.buildAll(s, new Date(2026, 9, 10, 9, 0));
+  assert.equal(JSON.stringify(s), before);
+  void env;
+});

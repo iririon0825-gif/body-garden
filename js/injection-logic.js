@@ -168,6 +168,40 @@ const InjectionLogic = {
   closed(state) {
     return state.injections.filter((r) => r.status === "administered" || r.status === "skipped").sort((a, b) => this._cmpDt(a, b));
   },
+
+  // ============ 注射部位（任意項目 site。在庫・次回予定・72時間判定・打ち忘れには一切影響しない） ============
+  // 保存は英字のID（INJECTION_SITES）。undefined / null / 知らないID は、すべて「未記録」として扱う。
+
+  isSiteId(id) {
+    return typeof id === "string" && INJECTION_SITES.some((s) => s.id === id);
+  },
+  // 表示名。未記録・知らないIDは null（4つのどれかに置き換えない）
+  siteLabel(id) {
+    const s = typeof id === "string" ? INJECTION_SITES.find((x) => x.id === id) : null;
+    return s ? s.label : null;
+  },
+  // ローテーションの次（右下腹部→左下腹部→右大腿→左大腿→右下腹部）。知らないIDは null
+  nextSiteId(id) {
+    const i = typeof id === "string" ? INJECTION_SITES.findIndex((s) => s.id === id) : -1;
+    return i < 0 ? null : INJECTION_SITES[(i + 1) % INJECTION_SITES.length].id;
+  },
+  // 次回の部位の候補（目安であり、指示ではない）。保存せず毎回導出する。
+  // 基準は「直近の、実際に投与済みの記録」だけ（予定・見送り・未投与は数えない）。
+  // その記録に有効な部位が無ければ候補なし。部位のある古い記録までさかのぼって推測しない（間に未記録の回があるとずれるため）。
+  suggestSite(state) {
+    const basis = this.lastAdministered(state);
+    if (!basis) return { site: null, reason: "noHistory" };
+    if (!this.isSiteId(basis.site)) return { site: null, reason: "basisSiteMissing", basisDate: basis.administeredAt };
+    return { site: this.nextSiteId(basis.site), reason: "ok", basisDate: basis.administeredAt, basisSite: basis.site };
+  },
+  // 投与記録の画面で「次回候補」を出してよい日付か。候補は「いまの次回の投与」にだけ意味がある。
+  // 実施日が最新の投与済み記録の日付より前（さかのぼっての入力）なら出さない。投与済みが無いときは候補自体が無いので false。
+  // 修正（編集）のときは呼び出し側で出さない。
+  shouldShowSiteSuggestion(state, date) {
+    const last = this.lastAdministered(state);
+    if (!last || !this.isYmd(date)) return false;
+    return date >= last.administeredAt;
+  },
   // 初回投与日（導出のみ・保存しない）。「初回」を示す専用フィールドは無いため、実際に「投与済み」の記録のうち
   // 最も古いものを使う。予定・見送り（打ち忘れ）は含めない。Body Garden開始日（profile.startDate）とは別の概念
   firstAdministered(state) {
@@ -429,12 +463,19 @@ const InjectionLogic = {
   _validDose(mg) {
     return INJECTION_DOSE_OPTIONS_MG.includes(mg);
   },
+  // 部位の入力: undefined / null / ""（未選択）または既知のID
+  _validSiteInput(site) {
+    return site === undefined || site === null || site === "" || this.isSiteId(site);
+  },
   _checkCommon(input) {
     if (input.comment !== undefined && input.comment !== null && (typeof input.comment !== "string" || input.comment.length > INJECTION_COMMENT_MAX)) {
       return this._fail("INVALID_COMMENT", `メモは${INJECTION_COMMENT_MAX}字以内で入力してください。`);
     }
     if (input.time !== undefined && input.time !== null && input.time !== "" && !this.isTime(input.time)) {
       return this._fail("INVALID_TIME", "時刻は HH:MM の形で入力してください（空欄でもかまいません）。");
+    }
+    if (!this._validSiteInput(input.site)) {
+      return this._fail("INVALID_SITE", "注射部位は選択肢から選んでください（未選択でもかまいません）。");
     }
     return null;
   },
@@ -736,6 +777,7 @@ const InjectionLogic = {
       rec.doseConfirmedDifferent = !!(a.needs.dose && !a.needs.dose.first); // 初回の確認は「用量を変えた」ではない
       rec.skipReason = null;
       if (input.comment !== undefined) rec.comment = input.comment || "";
+      if (input.site !== undefined) rec.site = input.site || null;
       rec.updatedAt = stamp;
     } else {
       let kind = "manual";
@@ -760,6 +802,7 @@ const InjectionLogic = {
         dose: input.dose,
         doseConfirmedDifferent: !!(a.needs.dose && !a.needs.dose.first),
         scheduleVersionId: sch.regular ? sch.regular.id : null,
+        site: input.site || null,
         comment: input.comment || "",
         createdAt: stamp,
       });
@@ -784,8 +827,22 @@ const InjectionLogic = {
     rec.dose = input.dose;
     rec.doseConfirmedDifferent = a.needs.dose ? !a.needs.dose.first : rec.doseConfirmedDifferent;
     if (input.comment !== undefined) rec.comment = input.comment || "";
+    if (input.site !== undefined) rec.site = input.site || null;
     rec.updatedAt = this._stamp(now);
     return { ok: true, record: rec, assessment: a };
+  },
+
+  // 投与済みの記録の「注射部位」だけを付ける・直す・未記録に戻す。過去の記録への補完にも使う（本人の操作で1件ずつ）。
+  // 変えるのは site と updatedAt だけ。用量・日付・時刻・在庫の数え方・種別・定例日・確認フラグには触れない。
+  // assessAdministration を通さない（部位だけを直すときに、用量や72時間の確認を求めない）。
+  // site: 既知のID、または null / ""（未記録に戻す）。それ以外は INVALID_SITE
+  applySetSite(state, id, site, now) {
+    const rec = state.injections.find((r) => String(r.id) === String(id));
+    if (!rec || rec.status !== "administered") return this._fail("NOT_ADMINISTERED", "部位を記録できる投与記録がありません。");
+    if (site === undefined || !this._validSiteInput(site)) return this._fail("INVALID_SITE", "注射部位は選択肢から選んでください。");
+    rec.site = site || null;
+    rec.updatedAt = this._stamp(now);
+    return { ok: true, record: rec };
   },
 
   // ============ 見送り ============

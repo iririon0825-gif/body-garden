@@ -51,6 +51,19 @@ const InjectionUI = {
     const opts = INJECTION_DOSE_OPTIONS_MG.map((mg) => `<option value="${mg}" ${mg === selected ? "selected" : ""}>${mg}mg</option>`).join("");
     return `<select id="${id}"><option value="" ${selected === null || selected === undefined ? "selected" : ""}>選択してください</option>${opts}</select>`;
   },
+  // 注射部位の4択ボタン（文字のみ）。selected: 選択中のID（なければ null）、suggested: 「次回候補」の印を付けるID（なければ null）。
+  // 候補は目安の表示だけで、選択状態にはしない（本人がタップするまで未選択）
+  _siteButtonsHtml(selected, suggested) {
+    return `<div class="inj-site-grid" role="radiogroup" aria-label="注射部位">${INJECTION_SITES.map((s) => {
+      const on = s.id === selected;
+      const sug = s.id === suggested;
+      return `<button type="button" class="inj-site-btn${sug ? " inj-site-btn--suggested" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" data-site="${escapeHtml(s.id)}">${escapeHtml(s.label)}${sug ? `<span class="inj-site-mark">次回候補</span>` : ""}</button>`;
+    }).join("")}</div>`;
+  },
+  // container 内のボタンに、タップで選択（もう一度タップで選択解除）を結び付ける。onPick(新しい選択 or null)
+  _bindSiteButtons(container, current, onPick) {
+    container.querySelectorAll("[data-site]").forEach((b) => b.addEventListener("click", () => onPick(b.dataset.site === current() ? null : b.dataset.site)));
+  },
   _field(label, inner, hint) {
     return `<label class="form-field"><span>${label}</span>${inner}${hint ? `<small class="inj-hint">${hint}</small>` : ""}</label>`;
   },
@@ -310,13 +323,14 @@ const InjectionUI = {
     const rows = shown
       .map((r) => {
         if (r.status === "administered") {
+          const siteLabel = L.siteLabel(r.site); // 未記録・知らないIDは null（未記録として表示）
           return `<li class="inj-row" data-id="${r.id}">
             <div class="inj-row-main">
               <span class="inj-row-date">${this._dl(r.administeredAt, today)} ${r.administeredTime ? escapeHtml(r.administeredTime) : "<span class='muted'>時刻不明</span>"}</span>
               <span class="inj-row-label">投与 ${typeof r.dose === "number" ? r.dose + "mg" : "—"}</span>
             </div>
-            <div class="inj-row-sub">${this._kindLabel(r, today)}${r.scheduledAt && r.scheduledAt !== r.administeredAt ? `　予定 ${this._dl(r.scheduledAt, today)}` : ""}${r.comment ? `　${escapeHtml(r.comment)}` : ""}</div>
-            <div class="inj-row-actions"><button class="btn-text" data-inj-edit="${r.id}">修正</button><button class="btn-text" data-inj-delete="${r.id}">削除</button></div>
+            <div class="inj-row-sub">${this._kindLabel(r, today)}${r.scheduledAt && r.scheduledAt !== r.administeredAt ? `　予定 ${this._dl(r.scheduledAt, today)}` : ""}　部位：${siteLabel ? escapeHtml(siteLabel) : "<span class='muted'>未記録</span>"}${r.comment ? `　${escapeHtml(r.comment)}` : ""}</div>
+            <div class="inj-row-actions"><button class="btn-text" data-inj-site="${r.id}">${siteLabel ? "部位を変更" : "部位を記録"}</button><button class="btn-text" data-inj-edit="${r.id}">修正</button><button class="btn-text" data-inj-delete="${r.id}">削除</button></div>
           </li>`;
         }
         return `<li class="inj-row inj-row-skipped" data-id="${r.id}">
@@ -447,6 +461,7 @@ const InjectionUI = {
     document.querySelectorAll("[data-inj-admin-id]").forEach((b) => b.addEventListener("click", () => this._openAdminister({ recordId: b.dataset.injAdminId })));
     document.querySelectorAll("[data-inj-cancel-id]").forEach((b) => b.addEventListener("click", () => this._confirmCancel(b.dataset.injCancelId)));
     document.querySelectorAll("[data-inj-edit]").forEach((b) => b.addEventListener("click", () => this._openAdminister({ editId: b.dataset.injEdit })));
+    document.querySelectorAll("[data-inj-site]").forEach((b) => b.addEventListener("click", () => this._openSetSite(b.dataset.injSite)));
     document.querySelectorAll("[data-inj-delete]").forEach((b) => b.addEventListener("click", () => this._confirmDeleteHistory(b.dataset.injDelete)));
   },
 
@@ -671,7 +686,7 @@ const InjectionUI = {
     const longGap = L.isLongGap(state, today);
     const confirm = { dose: false, interval: false };
     const context = [];
-    if (editing) context.push("実施日・時刻・用量・メモを修正します。予定日や定例日は変わりません。");
+    if (editing) context.push("実施日・時刻・用量・部位・メモを修正します。予定日や定例日は変わりません。");
     else if (opts.regularDate) context.push(`打ち忘れの回（${this._dl(opts.regularDate, today)}）の臨時投与として記録します。定例の投与曜日は変わりません。`);
     if (longGap && !editing) context.push("前回の投与記録から28日以上あいているため、用量は自動では選びません。処方元の指示を確認してください。");
     const olderDates = (opts.olderSkips || []).map((o) => this._dl(o.regularDate, today));
@@ -692,12 +707,36 @@ const InjectionUI = {
         ${this._field("実施時刻（任意）", `<input type="time" id="inj-a-time" value="${escapeHtml(init.time)}" />`, "分からなければ空欄のままで記録できます")}
         ${this._field("用量", this._doseSelect("inj-a-dose", init.dose), "製剤規格から選びます（アプリは増減を勧めません）")}
       </div>
+      <div class="inj-site" id="inj-a-site"></div>
       ${this._field("メモ（任意）", `<input type="text" id="inj-a-comment" maxlength="${INJECTION_COMMENT_MAX}" value="${escapeHtml(init.comment)}" />`)}
       <div id="inj-a-notes" class="inj-notes"></div>
       <div class="modal-actions">
         <button class="btn-secondary" id="inj-a-cancel">キャンセル</button>
         <button class="btn-primary" id="inj-a-ok" disabled>${editing ? "修正を保存" : "記録する"}</button>
       </div>`);
+    // 注射部位（任意）。候補は目安の表示だけで、最初は何も選ばない。部位を変えても用量・間隔の確認は外さない（メモと同じ扱い）。
+    // 修正では、保存済みの部位（有効なIDのときだけ）を選んだ状態で開き、候補は出さない。
+    let siteSel = editing && L.isSiteId(editing.site) ? editing.site : null;
+    let siteTouched = false;
+    const renderSite = () => {
+      const box = document.getElementById("inj-a-site");
+      if (!box) return;
+      // 候補は「いまの次回の投与」を新規に記録するときだけ（修正・最新の投与日より前の日付への入力では出さない）
+      const showHint = !editing && L.shouldShowSiteSuggestion(state, this._val("inj-a-date"));
+      const sg = showHint ? L.suggestSite(state) : { site: null, reason: "none" };
+      let hint = "";
+      if (sg.site) {
+        hint = `<small class="inj-hint inj-site-hint">次回候補：${escapeHtml(L.siteLabel(sg.site))}</small><small class="inj-hint">候補は順番の目安です。同じ部位の中でも、前回と少し位置をずらしてください。処方元の指示があればそちらを優先してください。</small>`;
+      } else if (sg.reason === "basisSiteMissing") {
+        hint = `<small class="inj-hint inj-site-hint">次回候補：部位記録なし</small>`;
+      }
+      box.innerHTML = `<span>注射部位（任意）</span>${this._siteButtonsHtml(siteSel, sg.site)}${hint}`;
+      this._bindSiteButtons(box, () => siteSel, (v) => {
+        siteSel = v;
+        siteTouched = true;
+        renderSite();
+      });
+    };
     const build = () => {
       const link = document.getElementById("inj-a-link");
       const linkValue = link ? link.value : "";
@@ -706,6 +745,8 @@ const InjectionUI = {
         time: this._val("inj-a-time") || null,
         dose: this._numOrNull(this._val("inj-a-dose")),
         comment: this._val("inj-a-comment"),
+        // 修正では、本人が部位を触ったときだけ送る（触っていなければ保存済みの値をそのまま残す。知らないIDも消さない）
+        site: editing && !siteTouched ? undefined : siteSel,
         editId: editing ? editing.id : undefined,
         recordId: linkValue || undefined,
         noLink: !editing && !linkValue,
@@ -762,6 +803,7 @@ const InjectionUI = {
         confirm.dose = false;
         confirm.interval = false;
         lastError = "";
+        if (id === "inj-a-date") renderSite(); // 候補を出してよい日付かは、実施日の変更のたびに判定し直す
         refresh();
       };
       el.addEventListener("input", h);
@@ -785,7 +827,50 @@ const InjectionUI = {
       }
       this._finish(failed.length ? `投与は記録しましたが、次の回を見送りとして記録できませんでした。<br />${failed.map((f) => escapeHtml(f)).join("<br />")}` : "");
     });
+    renderSite();
     refresh();
+  },
+
+  // ============ 注射部位だけを記録・変更・未記録に戻す（履歴の行から。本人の操作で1件ずつ） ============
+  // 変わるのは「部位」と「更新日時」だけ。用量・日付・在庫・次回の予定・72時間の判定は変わらない（用量や間隔の確認も出ない）。
+
+  _openSetSite(id) {
+    const state = UI.state;
+    const L = InjectionLogic;
+    const rec = state.injections.find((r) => String(r.id) === String(id));
+    if (!rec || rec.status !== "administered") return this._info("記録できません", "部位を記録できる投与記録がありません。");
+    const today = L.ymd(this._now());
+    let sel = L.isSiteId(rec.site) ? rec.site : null;
+    this._modal(`
+      <p class="modal-title">注射部位を記録</p>
+      <div class="modal-body">
+        ${this._dl(rec.administeredAt, today)} ${rec.administeredTime ? escapeHtml(rec.administeredTime) : "時刻不明"} の投与の部位だけを記録します。用量・日付・在庫の数え方・次回の予定は変わりません。
+      </div>
+      <div class="inj-site" id="inj-s-site"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="inj-s-cancel">キャンセル</button>
+        <button class="btn-secondary" id="inj-s-clear">未記録に戻す</button>
+        <button class="btn-primary" id="inj-s-ok" disabled>記録する</button>
+      </div>`);
+    const box = document.getElementById("inj-s-site");
+    const draw = () => {
+      box.innerHTML = this._siteButtonsHtml(sel, null);
+      this._bindSiteButtons(box, () => sel, (v) => {
+        sel = v;
+        draw();
+      });
+      document.getElementById("inj-s-ok").disabled = sel === null;
+    };
+    const save = (site) => {
+      if (!this._writable()) return;
+      const r = L.applySetSite(state, rec.id, site, this._now());
+      if (!r.ok) return this._info("記録できません", escapeHtml(r.message));
+      this._finish();
+    };
+    document.getElementById("inj-s-cancel").addEventListener("click", () => this._close());
+    document.getElementById("inj-s-clear").addEventListener("click", () => save(null));
+    document.getElementById("inj-s-ok").addEventListener("click", () => save(sel));
+    draw();
   },
 
   // ============ 打ち忘れた（基準: 現在時刻 → 次の定例投与日時。電子添付文書 7.2） ============

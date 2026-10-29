@@ -521,6 +521,12 @@ const Backup = {
       checkSnapshotCheck(e.missedCheck, `${p}.missedCheck`);
       if (e.scheduleVersionId !== undefined && e.scheduleVersionId !== null && !intId(e.scheduleVersionId)) err(`${p}.scheduleVersionId が不正です`);
       if (e.comment !== undefined && !str(e.comment, this.LIMITS.text)) err(`${p}.comment が不正です`);
+      // 注射部位（任意）。未記録(undefined/null)・既知のIDは通す。書式が正しい知らないID（将来の版で増えた部位など）は警告にとどめ、
+      // 復元は止めない（画面では未記録として扱い、4つのどれにも置き換えない）。それ以外（数値・HTMLを含む文字列など）は不正
+      if (e.site !== undefined && e.site !== null) {
+        if (typeof e.site !== "string" || !/^[A-Za-z]{1,32}$/.test(e.site)) err(`${p}.site が不正です`);
+        else if (typeof INJECTION_SITES !== "undefined" && !INJECTION_SITES.some((x) => x.id === e.site)) warn(`${p} の注射部位(${e.site})がこのアプリの選択肢にありません（未記録として扱います）`);
+      }
       for (const k of ["createdAt", "updatedAt"]) if (e[k] !== undefined && !tsOrNull(e[k])) err(`${p}.${k} が不正です`);
       // 以前のデータ（v4以前）に実施日のない投与済みがありうる。計算からは除外されるが、復元は止めず警告にとどめる
       if (e.status === "administered" && !e.administeredAt) warn(`${p} は投与済みですが実施日がありません（計算からは除外されます）`);
