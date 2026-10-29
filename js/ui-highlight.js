@@ -31,6 +31,12 @@ const HighlightUI = {
     return v > 0 && Number(s) !== 0 ? `+${s}` : s;
   },
 
+  // 表示上0になる差は「-0.00」ではなく「0.00」にする（主役の数字に使う）
+  _signedClean(v, d) {
+    const t = this._signed(v, d);
+    return Number(t) === 0 ? t.replace("-", "") : t;
+  },
+
   // 記録タブの描画（UI.renderScreen("records") から呼ぶ）。毎日の記録のときは何も差し替えず、
   // 4つのカードの表示を戻して切替だけを描く
   render(state) {
@@ -100,10 +106,8 @@ const HighlightUI = {
         <p class="hl-sub">体重を記録した日：${s.weight.n}日${s.inProgress ? "（この期間はまだ途中です）" : ""}</p>
       </section>`);
 
-    parts.push(this._weightCardHtml(s, isMonth));
-    if (isMonth) parts.push(this._monthCardHtml(s));
-
-    parts.push(`
+    // 並び順：まず「どうだったか」（主役の変化→からだの発見）、そのあとに根拠（体重の詳細・グラフ・Goal・体組成…）
+    const chartCard = `
       <section class="card comp-trend-card">
         <p class="card-title">${UI.lineIcon("trend")}${isMonth ? "月" : "週"}の体重グラフ</p>
         <div class="chart-wrap comp-trend-wrap">
@@ -112,12 +116,22 @@ const HighlightUI = {
         </div>
         <div class="chart-legend" id="${ids.weight}-legend"></div>
         <p class="comp-trend-note">記録のない日は空けて表示しています（0kgとして扱いません）。</p>
-      </section>`);
-
+      </section>`;
+    if (isMonth) {
+      parts.push(this._heroCardHtml(s, true));
+      parts.push(this._discoveryCardHtml(s, true));
+      parts.push(this._weightCardHtml(s, true));
+      parts.push(chartCard);
+      parts.push(this._monthCardHtml(s));
+    } else {
+      parts.push(this._discoveryCardHtml(s, false));
+      parts.push(this._heroCardHtml(s, false));
+      parts.push(chartCard);
+      parts.push(this._weightCardHtml(s, false));
+    }
     parts.push(this._compositionCardHtml(s, ids));
     parts.push(this._proteinCardHtml(s));
     parts.push(this._recordsCardHtml(s));
-    parts.push(this._discoveryCardHtml(s, isMonth));
     return parts.join("");
   },
 
@@ -130,59 +144,91 @@ const HighlightUI = {
     };
   },
 
-  // key=true は、そのカードで視線を集める主要値（1カード1〜2個）。増減の方向で色は変えない
-  _stat(label, value, sub, key) {
-    const emphasize = key && value !== HighlightLogic.NO_DATA; // 値がないときは強調しない
-    return `<div class="hl-stat${emphasize ? " hl-stat-key" : ""}"><span class="hl-stat-label">${label}</span><span class="hl-stat-value">${value}</span>${sub ? `<span class="hl-stat-sub">${sub}</span>` : ""}</div>`;
+  _stat(label, value, sub) {
+    return `<div class="hl-stat"><span class="hl-stat-label">${label}</span><span class="hl-stat-value">${value}</span>${sub ? `<span class="hl-stat-sub">${sub}</span>` : ""}</div>`;
   },
 
   _dated(p, digits, unit) {
     return p ? `${this._f(p.value, digits)}${unit}<br />${HighlightLogic.mdw(p.date)}` : HighlightLogic.NO_DATA;
   },
 
+  // 体重の詳細（補助値：平均・最小・最大）。主役（期間の変化／前週比）は _heroCardHtml
   _weightCardHtml(s, isMonth) {
     const L = HighlightLogic;
     const w = s.weight;
-    const prevLabel = isMonth ? "前の月" : "前の週";
     const avgText = w.avg == null ? L.NO_DATA : `${this._f(w.avg, 2)} kg`;
-    let diffText;
-    let diffSub = "";
-    if (w.diff == null) {
-      diffText = w.n === 0 ? L.NO_DATA : `${prevLabel}の記録なし`;
-    } else {
-      diffText = `${this._signed(w.diff, 2)} kg`;
-      diffSub = `${prevLabel}の平均 ${this._f(w.prev.avg, 2)} kg（${w.prev.n}日）`;
-      if (w.diffReferenceOnly) diffSub += `<br />${L.LOW_COUNT_NOTE}`;
-    }
-    const stats = [
-      this._stat(`${isMonth ? "月" : "週"}の平均`, avgText, w.n ? `${w.n}日の平均` : "", true),
-      this._stat(`${prevLabel}との差`, diffText, diffSub, !isMonth && w.diff != null), // 前の週の記録がないとき（文言だけ）は強調しない
-      this._stat("最小", this._dated(w.min, 2, " kg")),
-      this._stat("最大", this._dated(w.max, 2, " kg")),
-    ];
+    const stats = [this._stat(`${isMonth ? "月" : "週"}の平均`, avgText, w.n ? `${w.n}日の平均（期間をならした参考値です）` : "")];
     if (isMonth) {
-      const fl = s.firstLast;
-      // ％は、月内で最初に測った体重を基準にした変化率（HOMEの「kg変化＋％」と同じ Calc.changePct）。
-      // 最初と最後の実測が両方あるとき（fl.available）だけ出し、推定はしない
-      const flPct = fl.available ? Calc.changePct(fl.to.value, fl.from.value) : null;
-      const flValue = fl.available
-        ? `${this._signed(fl.diff, 2)} kg${flPct == null ? "" : `<small class="hl-pct">（${this._signed(flPct, 1).replace(/^-(0\.0+)$/, "$1")}%）</small>`}`
-        : L.NO_DATA;
-      stats.push(
-        this._stat(
-          "最初と最後の差",
-          flValue,
-          fl.available ? `${L.mdw(fl.from.date)} ${this._f(fl.from.value, 2)} → ${L.mdw(fl.to.date)} ${this._f(fl.to.value, 2)}` : w.n === 1 ? "測定が1日だけのため、差は出していません" : "",
-          true
-        )
-      );
+      // 月の平均どうしの差。「今月どれだけ変わったか」とは別のもの（主役は上の「最初→最新」の変化）
+      const prevLabel = "前の月";
+      let diffText;
+      let diffSub = "";
+      if (w.diff == null) {
+        diffText = w.n === 0 ? L.NO_DATA : `${prevLabel}の記録なし`;
+      } else {
+        diffText = `${this._signed(w.diff, 2)} kg`;
+        diffSub = `${prevLabel}の平均 ${this._f(w.prev.avg, 2)} kg（${w.prev.n}日）`;
+        if (w.diffReferenceOnly && !w.lowCount) diffSub += `<br />${L.LOW_COUNT_NOTE}`; // 今の月が少ないときは上の主役の注記に任せる
+      }
+      stats.push(this._stat(`${prevLabel}の平均との差`, diffText, diffSub));
     }
+    stats.push(this._stat("最小", this._dated(w.min, 2, " kg")), this._stat("最大", this._dated(w.max, 2, " kg")));
     return `
       <section class="card">
-        <p class="card-title">${UI.lineIcon("weight")}体重</p>
+        <p class="card-title">${UI.lineIcon("weight")}体重の詳細</p>
         <div class="hl-stats">${stats.join("")}</div>
-        ${w.lowCountNote && w.n > 0 && !w.diffReferenceOnly ? `<p class="hl-note">${w.lowCountNote}</p>` : ""}
-        ${s.softNote ? `<p class="hl-note">${s.softNote}</p>` : ""}
+      </section>`;
+  },
+
+  // 期間の主役。月＝月内の最初の実測→最新の実測の変化（kgと％）／週＝前の週の平均との差（前週比）。
+  // 増減の方向で色は変えない（採点しない）。値がないときは強調しない
+  _heroCardHtml(s, isMonth) {
+    const L = HighlightLogic;
+    const w = s.weight;
+    // 今の期間が少ないとき／比べる相手（前の週）が少ないとき（diffReferenceOnly）は「参考程度」の注記を1回だけ出す
+    const lowNote = (w.n > 0 && w.lowCountNote) || (!isMonth && w.diffReferenceOnly) ? L.LOW_COUNT_NOTE : null;
+    const notes = [lowNote, s.softNote].filter(Boolean).map((t) => `<p class="hl-note">${t}</p>`).join("");
+    if (isMonth) {
+      const fl = s.firstLast;
+      const title = `${s.inProgress ? "今月" : "この月"}の変化`;
+      let body;
+      if (fl.available) {
+        // ％は、月内で最初に測った体重を基準にした変化率（HOMEの「kg変化＋％」と同じ Calc.changePct）。推定はしない
+        const pct = Calc.changePct(fl.to.value, fl.from.value);
+        const pctText = pct == null ? "" : `<span class="hl-hero-pct">${this._signedClean(pct, 1)}%</span>`;
+        body = `<div class="hl-hero">
+            <p class="hl-hero-value">${this._signedClean(fl.diff, 2)} kg${pctText}</p>
+            <p class="hl-hero-sub">${L.mdw(fl.from.date)} ${this._f(fl.from.value, 2)} kg → ${L.mdw(fl.to.date)} ${this._f(fl.to.value, 2)} kg</p>
+            <p class="hl-hero-sub">月内で最初に測った体重を基準にしています</p>
+          </div>`;
+      } else {
+        body = `<p class="hl-line">${w.n === 1 ? "測定が1日だけのため、変化は出していません" : L.NO_DATA}</p>`;
+      }
+      return `
+      <section class="card hl-hero-card">
+        <p class="card-title">${UI.lineIcon("weight")}${title}</p>
+        ${body}
+        ${notes}
+      </section>`;
+    }
+    let body;
+    const subText = w.diff != null ? `前の週の平均 ${this._f(w.prev.avg, 2)} kg（${w.prev.n}日）との差（週平均どうしの比べです）` : "";
+    if (w.diff != null && !w.lowCount) {
+      body = `<div class="hl-hero">
+            <p class="hl-hero-value">${this._signedClean(w.diff, 2)} kg</p>
+            <p class="hl-hero-sub">${subText}</p>
+          </div>`;
+    } else if (w.diff != null) {
+      // 今週の記録が週3日未満（1〜2日）：数値は出すが、主役の強調はしない（確度が高く見えすぎないように）。「参考程度」の注記は下に出る
+      body = `<p class="hl-big">${this._signedClean(w.diff, 2)} kg</p><p class="hl-sub">${subText}</p>`;
+    } else {
+      body = `<p class="hl-line">${w.n === 0 ? L.NO_DATA : "前の週の記録なし"}</p>`;
+    }
+    return `
+      <section class="card hl-hero-card">
+        <p class="card-title">${UI.lineIcon("weight")}前週比</p>
+        ${body}
+        ${notes}
       </section>`;
   },
 
@@ -301,9 +347,10 @@ const HighlightUI = {
     const w = s.inProgress ? (isMonth ? "今月" : "今週") : isMonth ? "この月" : "この週";
     const sentences = s.discoveries;
     return `
-      <section class="card">
+      <section class="card hl-discovery-card">
         <p class="card-title">${UI.lineIcon("trend")}${w}のからだの発見</p>
         <ul class="hl-list hl-discoveries">${sentences.map((t) => `<li>${this._esc(t)}</li>`).join("")}</ul>
+        <p class="hl-affirm">${this._esc(s.affirmation)}</p>
         <p class="hl-sub">${this._esc(s.closing)}</p>
       </section>`;
   },

@@ -422,6 +422,7 @@ const HighlightLogic = {
       closing: this.CLOSING[kind],
     };
     summary.discoveries = this.generateDiscoveries(summary);
+    summary.affirmation = this.generateAffirmation(summary);
     return summary;
   },
 
@@ -494,5 +495,35 @@ const HighlightLogic = {
   // 最大3文（優先順：①記録を続けたこと ②事実としての数値 ③同じ期間にあった記録を並べること）
   generateDiscoveries(s) {
     return this.discoveryCandidates(s).slice(0, 3);
+  },
+
+  // ============ 肯定メッセージ（週・月に1文。ルールで選ぶだけ。AIは使わない） ============
+  // 記録そのもの・続けてきたことを肯定する文だけ。点数・成功失敗・「頑張ったから減った」のような努力との結び付けはしない。
+  // 選び方：記録が少ない（週<3日／月<8日）→ 記録できた日を肯定／体重が前の週（月は最初→最新）より減っていて、
+  // 記録が十分あり、維持・ガードレール中（softMode）でないとき → 積み重ねを肯定／それ以外で記録が十分 → 記録の積み重ねを肯定。
+  // 同じ期間では同じ文になるよう、期間の開始日から文を選ぶ（乱数は使わない）
+  AFFIRM_NONE: "記録できた日が増えると、ここで振り返りやすくなります。",
+  AFFIRM_FEW: "記録できた日だけでも、からだを振り返る大事な手がかりです。",
+
+  // 「ほぼ同じ」（SAME_DIFF_KG 未満）は減ったことにしない（からだの発見の「ほぼ同じくらい」と食い違わせない。浮動小数の誤差も除く）
+  affirmationDecreased(s) {
+    if (s.kind === "month") return s.firstLast.available && s.firstLast.diff <= -this.SAME_DIFF_KG;
+    return s.weight.diff != null && !s.weight.diffReferenceOnly && s.weight.diff <= -this.SAME_DIFF_KG;
+  },
+
+  generateAffirmation(s) {
+    const isMonth = s.kind === "month";
+    const n = s.weight.n;
+    if (n === 0) return this.AFFIRM_NONE;
+    if (n < s.minDays) return this.AFFIRM_FEW;
+    const w = isMonth ? (s.inProgress ? "今月" : "この月") : s.inProgress ? "今週" : "この週";
+    const pick = (list) => {
+      const seed = String(s.from).replace(/\D/g, "").split("").reduce((a, c) => a + Number(c), 0);
+      return list[seed % list.length];
+    };
+    if (!s.softMode && this.affirmationDecreased(s)) {
+      return pick(["少しずつ積み重ねた変化が、数字にも表れています。", `${w}の記録には、ここまで続けてきた変化が見えています。`]);
+    }
+    return pick([isMonth ? `${w}も丁寧に記録を重ねられています。` : `${w}もからだの変化をしっかり残せています。`, "変化が見えるくらい、記録が積み上がりました。"]);
   },
 };

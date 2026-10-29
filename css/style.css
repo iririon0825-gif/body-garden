@@ -1970,20 +1970,21 @@ body:has([data-screen="settings"]:not([hidden])) {
 .hl-line { font-size: 0.85rem; line-height: 1.6; margin: 4px 0; }
 .hl-big { font-size: 1.05rem; font-weight: 700; line-height: 1.5; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
 .hl-big small { font-size: 0.78rem; font-weight: 500; margin-left: 6px; color: var(--text-lo); }
-/* 数値の情報階層（見た目のみ）。主要値はBody Gardenの紫（--tab-ink）で一段目立たせ、補足値は弱いまま。
-   増減の方向では色を変えない（採点しない）。新しい色は足さず、既存の紫・ラベンダー・ローズ（btn-primaryと同じ端色）だけを使う */
+/* 数値の情報階層（見た目のみ）。いちばん強いのは期間の主役（月＝最初→最新の変化／週＝前週比）だけ。
+   次にからだの発見と肯定の一文、平均・最小・最大・日数などは弱い補助値。増減の方向では色を変えない（採点しない）。
+   新しい色は足さず、既存の紫・ラベンダー・ローズ（btn-primaryと同じ端色）だけを使う */
 .hl-key { color: var(--tab-ink); font-weight: 700; }
-.hl-big.hl-key { font-size: 1.35rem; line-height: 1.35; }
-.hl-big.hl-key small { font-size: 0.8rem; font-weight: 600; color: var(--tab-ink); opacity: 0.85; white-space: nowrap; }
+.hl-big.hl-key { font-size: 1.1rem; line-height: 1.4; }
+.hl-big.hl-key small { font-size: 0.78rem; font-weight: 500; color: var(--text-lo); }
+.hl-hero { padding: 12px 14px 12px 16px; border-radius: var(--radius-md); background: linear-gradient(180deg, #8f82c9, #c98fae) no-repeat left / 4px 100%, rgba(222, 214, 238, 0.45); }
+.hl-hero-value { margin: 0; font-size: 2.1rem; font-weight: 700; line-height: 1.25; color: var(--tab-ink); font-variant-numeric: tabular-nums; }
+.hl-hero-pct { font-size: 1.3rem; font-weight: 700; margin-left: 10px; white-space: nowrap; }
+.hl-hero-sub { margin: 6px 0 0; font-size: 0.74rem; line-height: 1.6; color: var(--text-lo); font-variant-numeric: tabular-nums; }
+.hl-affirm { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid rgba(0, 0, 0, 0.06); font-size: 0.95rem; font-weight: 500; line-height: 1.75; color: var(--tab-ink); }
 .hl-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; align-items: start; }
 .hl-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .hl-stat-label { font-size: 0.72rem; color: var(--text-lo); }
 .hl-stat-value { font-size: 0.92rem; font-weight: 500; line-height: 1.4; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.hl-stat-key { padding: 8px 10px 8px 12px; border-radius: var(--radius-md); background: linear-gradient(180deg, #8f82c9, #c98fae) no-repeat left / 3px 100%, rgba(222, 214, 238, 0.4); }
-.hl-stats > .hl-stat-key:last-child:nth-child(odd) { grid-column: 1 / -1; } /* 奇数個の最後が主要値のとき（月刊の最初と最後の差）は横いっぱいにして、kgと％を窮屈にしない */
-.hl-stat-key .hl-stat-label { color: var(--tab-ink); }
-.hl-stat-key .hl-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--tab-ink); }
-.hl-stat-key .hl-pct { font-size: 0.8rem; font-weight: 600; margin-left: 4px; white-space: nowrap; opacity: 0.85; }
 .hl-stat-sub { font-size: 0.68rem; line-height: 1.5; color: var(--text-lo); overflow-wrap: anywhere; }
 .hl-goal-list { list-style: none; margin: 8px 0 0; padding: 0; }
 .hl-goal-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); font-size: 0.85rem; }
@@ -1997,7 +1998,7 @@ body:has([data-screen="settings"]:not([hidden])) {
 .hl-comp-wrap { height: 110px; }
 .hl-list { list-style: none; margin: 4px 0 0; padding: 0; }
 .hl-list li { padding: 5px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); font-size: 0.85rem; line-height: 1.6; font-variant-numeric: tabular-nums; }
-.hl-discoveries li { border-bottom: none; padding: 3px 0; }
+.hl-discoveries li { border-bottom: none; padding: 3px 0; font-size: 0.9rem; }
 .hl-subtitle { margin-top: 14px; }
 @media (min-width: 700px) {
   .hl-comp-wrap { height: 130px; }

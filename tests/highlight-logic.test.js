@@ -620,3 +620,107 @@ test("記録の無い期間: 0扱いにせず、「データなし」相当（nu
   assert.equal(r.discoveries[0], "この月は体重の記録がありませんでした。");
   assert.equal(r.firstLast.available, false);
 });
+
+// ---------- 肯定メッセージ（週・月に1文。ルールで選ぶ。AIなし） ----------
+
+const AFFIRM_BANNED = ["成功", "優秀", "頑張", "がんばり", "失敗", "停滞", "もっと", "のおかげ", "のせい"];
+
+function affirmState(weightsOct, opts) {
+  const s = baseState();
+  s.dailyRecords = weightsOct.map(([d, w]) => rec(d, w));
+  if (opts && opts.maintenance) s.goals.mode = "maintenance";
+  return s;
+}
+const OCT_DAYS_10 = ["02", "05", "08", "10", "12", "15", "18", "20", "25", "29"].map((d) => `2026-10-${d}`);
+
+test("肯定メッセージ: 月・記録が十分で体重が減っている → 積み重ねを肯定する文（努力と結び付けない）", () => {
+  const s = affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26]));
+  const r = sum(s, month(TODAY));
+  assert.equal(r.firstLast.diff < 0, true);
+  assert.ok(["少しずつ積み重ねた変化が、数字にも表れています。", "今月の記録には、ここまで続けてきた変化が見えています。"].includes(r.affirmation), r.affirmation);
+});
+
+test("肯定メッセージ: 月・記録が十分で体重が増えている → 減ったことに触れない、記録の積み重ねの文", () => {
+  const s = affirmState(OCT_DAYS_10.map((d, i) => [d, 65 + i * 0.2]));
+  const r = sum(s, month(TODAY));
+  assert.equal(r.firstLast.diff > 0, true);
+  assert.ok(["今月も丁寧に記録を重ねられています。", "変化が見えるくらい、記録が積み上がりました。"].includes(r.affirmation), r.affirmation);
+});
+
+test("肯定メッセージ: 記録が少ない（月8日未満・週3日未満）／ない → 少なさを責めない固定の文", () => {
+  const few = affirmState([["2026-10-02", 67.8], ["2026-10-20", 66.5], ["2026-10-29", 65.4]]);
+  assert.equal(sum(few, month(TODAY)).affirmation, H.AFFIRM_FEW);
+  assert.equal(sum(few, week(TODAY)).affirmation, H.AFFIRM_FEW); // 10/26〜11/1 は1日だけ（10/29）
+  assert.equal(sum(affirmState([]), month(TODAY)).affirmation, H.AFFIRM_NONE);
+  assert.equal(sum(affirmState([]), week(TODAY)).affirmation, H.AFFIRM_NONE);
+});
+
+test("肯定メッセージ: 週・前の週より平均が下がっていて記録が十分なときだけ「減った」系。参考程度（記録が少ない週が相手）は出さない", () => {
+  const dec = affirmState([["2026-10-19", 66.5], ["2026-10-20", 66.4], ["2026-10-21", 66.5], ["2026-10-26", 65.6], ["2026-10-27", 65.5], ["2026-10-28", 65.4]]);
+  const rd = sum(dec, week(TODAY));
+  assert.ok(rd.weight.diff < 0 && rd.weight.diffReferenceOnly === false);
+  assert.ok(["少しずつ積み重ねた変化が、数字にも表れています。", "今週の記録には、ここまで続けてきた変化が見えています。"].includes(rd.affirmation), rd.affirmation);
+  const refOnly = affirmState([["2026-10-19", 66.5], ["2026-10-26", 65.6], ["2026-10-27", 65.5], ["2026-10-28", 65.4]]); // 前の週は1日だけ
+  const rr = sum(refOnly, week(TODAY));
+  assert.equal(rr.weight.diffReferenceOnly, true);
+  assert.ok(["今週もからだの変化をしっかり残せています。", "変化が見えるくらい、記録が積み上がりました。"].includes(rr.affirmation), rr.affirmation);
+});
+
+test("肯定メッセージ: 維持モード・ガードレール中（softMode）は、体重が減っていても「減った」系を出さない", () => {
+  const s = affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26]), { maintenance: true });
+  const r = sum(s, month(TODAY));
+  assert.equal(r.softMode, true);
+  assert.equal(r.firstLast.diff < 0, true);
+  assert.ok(["今月も丁寧に記録を重ねられています。", "変化が見えるくらい、記録が積み上がりました。"].includes(r.affirmation), r.affirmation);
+});
+
+test("肯定メッセージ: 過去の期間は「この月／この週」。同じ期間・同じ記録なら必ず同じ文（乱数なし）", () => {
+  const s = affirmState([["2026-09-02", 67], ["2026-09-04", 67], ["2026-09-08", 67], ["2026-09-10", 67], ["2026-09-12", 67], ["2026-09-15", 67], ["2026-09-20", 67], ["2026-09-28", 67]]);
+  const a = sum(s, month("2026-09-15")).affirmation;
+  assert.equal(sum(s, month("2026-09-15")).affirmation, a);
+  assert.ok(!a.includes("今月") && !a.includes("今週"), a);
+});
+
+test("肯定メッセージ: 全パターンで禁止語・評価語・「もっと」「頑張」を含まない。1文で、state を書き換えない", () => {
+  const forb = clone(H.FORBIDDEN_WORDS);
+  const states = [
+    affirmState([]),
+    affirmState([["2026-10-29", 65.4]]),
+    affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26])),
+    affirmState(OCT_DAYS_10.map((d, i) => [d, 65 + i * 0.2])),
+    affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26]), { maintenance: true }),
+  ];
+  const periods = [month(TODAY), week(TODAY), month("2026-09-15"), week("2026-10-19"), month("2026-08-10")];
+  const seen = new Set();
+  for (const st of states) {
+    for (const p of periods) {
+      const before = JSON.stringify(st);
+      const a = sum(st, p).affirmation;
+      assert.equal(JSON.stringify(st), before);
+      assert.equal(typeof a, "string");
+      assert.ok(a.length > 0 && a.endsWith("。") && a.split("。").length === 2, a);
+      for (const w of [...forb, ...AFFIRM_BANNED]) assert.ok(!a.includes(w), `${a} に ${w}`);
+      seen.add(a);
+    }
+  }
+  for (const t of [H.AFFIRM_FEW, H.AFFIRM_NONE]) for (const w of [...forb, ...AFFIRM_BANNED]) assert.ok(!t.includes(w), `${t} に ${w}`);
+  assert.ok(seen.size >= 4);
+});
+
+test("肯定メッセージ: 平均がほぼ同じ（0.1kg未満の差・浮動小数の誤差を含む）なら「減った」系を出さない（からだの発見の「ほぼ同じ」と食い違わない）", () => {
+  const DEC = ["少しずつ積み重ねた変化が、数字にも表れています。", "今週の記録には、ここまで続けてきた変化が見えています。", "今月の記録には、ここまで続けてきた変化が見えています。"];
+  // 前の週・今週とも平均66.2（3日ずつ）。0.1+0.2 のような浮動小数の誤差が差に出る組み合わせ
+  const same = affirmState([["2026-10-19", 66.1], ["2026-10-20", 66.2], ["2026-10-21", 66.3], ["2026-10-26", 66.3], ["2026-10-27", 66.2], ["2026-10-28", 66.1]]);
+  const w = sum(same, week(TODAY));
+  assert.ok(Math.abs(w.weight.diff) < H.SAME_DIFF_KG);
+  assert.ok(w.discoveries.some((t) => t.includes("ほぼ同じくらい")));
+  assert.ok(!DEC.includes(w.affirmation), w.affirmation);
+  // 月：最初→最新が -0.03kg
+  const tiny = affirmState(OCT_DAYS_10.map((d, i) => [d, i === 9 ? 67.77 : 67.8]));
+  const m = sum(tiny, month(TODAY));
+  assert.ok(m.firstLast.diff < 0 && m.firstLast.diff > -H.SAME_DIFF_KG);
+  assert.ok(!DEC.includes(m.affirmation), m.affirmation);
+  // ちょうど0.1kg以上減っていれば「減った」系になる（境界）
+  const edge = affirmState(OCT_DAYS_10.map((d, i) => [d, i === 9 ? 67.5 : 67.8]));
+  assert.ok(DEC.includes(sum(edge, month(TODAY)).affirmation));
+});
