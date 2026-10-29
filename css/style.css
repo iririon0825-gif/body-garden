@@ -1970,7 +1970,7 @@ body:has([data-screen="settings"]:not([hidden])) {
 .hl-line { font-size: 0.85rem; line-height: 1.6; margin: 4px 0; }
 .hl-big { font-size: 1.05rem; font-weight: 700; line-height: 1.5; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
 .hl-big small { font-size: 0.78rem; font-weight: 500; margin-left: 6px; color: var(--text-lo); }
-/* 数値の情報階層（見た目のみ）。いちばん強いのは期間の主役（月＝最初→最新の変化／週＝前週比）だけ。
+/* 数値の情報階層（見た目のみ）。いちばん強いのは期間の主役（月・週とも、最初の実測→最後の実測の変化）だけ。
    次にからだの発見と肯定の一文、平均・最小・最大・日数などは弱い補助値。増減の方向では色を変えない（採点しない）。
    新しい色は足さず、既存の紫・ラベンダー・ローズ（btn-primaryと同じ端色）だけを使う */
 .hl-key { color: var(--tab-ink); font-weight: 700; }
@@ -1978,6 +1978,9 @@ body:has([data-screen="settings"]:not([hidden])) {
 .hl-big.hl-key small { font-size: 0.78rem; font-weight: 500; color: var(--text-lo); }
 .hl-hero { padding: 12px 14px 12px 16px; border-radius: var(--radius-md); background: linear-gradient(180deg, #8f82c9, #c98fae) no-repeat left / 4px 100%, rgba(222, 214, 238, 0.45); }
 .hl-hero-value { margin: 0; font-size: 2.1rem; font-weight: 700; line-height: 1.25; color: var(--tab-ink); font-variant-numeric: tabular-nums; }
+/* 週2日：数値は出すが、主役より一段弱める（縦線なし・小さめ） */
+.hl-hero-soft { background: rgba(222, 214, 238, 0.35); }
+.hl-hero-soft .hl-hero-value { font-size: 1.5rem; }
 .hl-hero-pct { font-size: 1.3rem; font-weight: 700; margin-left: 10px; white-space: nowrap; }
 .hl-hero-sub { margin: 6px 0 0; font-size: 0.74rem; line-height: 1.6; color: var(--text-lo); font-variant-numeric: tabular-nums; }
 .hl-affirm { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid rgba(0, 0, 0, 0.06); font-size: 0.95rem; font-weight: 500; line-height: 1.75; color: var(--tab-ink); }

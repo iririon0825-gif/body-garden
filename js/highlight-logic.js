@@ -431,13 +431,16 @@ const HighlightLogic = {
   _f(v, d) {
     return Number(v).toFixed(d);
   },
+  // 0.1kg 刻みの体重で「ちょうど0.1kg」が 0.0999… にならないよう、差を小数2桁に丸めてからしきい値と比べる
+  _r2(v) {
+    return Math.round(Number(v) * 100) / 100;
+  },
 
   // 最大3文に切る前の、すべての候補（優先順）
   discoveryCandidates(s) {
     const isMonth = s.kind === "month";
     const current = s.inProgress;
     const w = isMonth ? (current ? "今月" : "この月") : current ? "今週" : "この週";
-    const prevW = isMonth ? "前の月" : "前の週";
     const n = s.weight.n;
     const out = [];
 
@@ -452,19 +455,26 @@ const HighlightLogic = {
     // 記録が少ないとき：傾向は読み取らない
     if (n > 0 && s.weight.lowCount) out.push(`記録が${n}日分で、${w}の傾向はまだ読み取らずにおきます。`);
 
-    // ② 事実としての数値
+    // ② 事実としての数値。平均は主語にしない（減量中は、ならした値より「どこからどこへ動いたか」「最後の記録はどこか」を優先する）。
+    //   月・週とも：期間内の最初の実測 → 最後の実測（週平均どうしの差は、からだの発見には使わない）
+    //   記録が1日：その日の実測だけ／少ないとき（月）：範囲／維持・ガードレール中（softMode）：比べる文・変化の文を出さず、最後の実測だけ
     const w0 = s.weight;
-    const canCompare = w0.diff != null && !w0.lowCount && !w0.prev.lowCount;
-    if (canCompare && !s.softMode) {
-      if (Math.abs(w0.diff) < this.SAME_DIFF_KG) out.push(`${w}の平均は${this._f(w0.avg, 2)}kgで、${prevW}とほぼ同じくらいでした。`);
-      else out.push(`${w}の平均は${this._f(w0.avg, 2)}kgで、${prevW}より${this._f(Math.abs(w0.diff), 2)}kg${w0.diff < 0 ? "低め" : "高め"}でした。`);
-    } else if (canCompare && s.softMode) {
-      out.push(`${w}の平均は${this._f(w0.avg, 2)}kgでした。`);
-    } else if (n >= 2) {
-      out.push(`${w}の体重は${this._f(w0.min.value, 2)}〜${this._f(w0.max.value, 2)}kgの範囲で推移しました。`);
-    } else if (n === 1) {
-      out.push(`${w}の体重記録は${this._f(w0.first.value, 2)}kgでした。`);
-    }
+    const fl = s.firstLast;
+    const lastText = w0.last ? `${w}の最後の記録は${this._f(w0.last.value, 2)}kgです。` : null;
+    const range = n >= 2 ? `${w}の体重は${this._f(w0.min.value, 2)}〜${this._f(w0.max.value, 2)}kgの範囲で推移しました。` : null;
+    const moved = () => {
+      if (!fl.available) return null;
+      if (Math.abs(this._r2(fl.diff)) < this.SAME_DIFF_KG) {
+        return isMonth ? `${w}は${this._f(fl.from.value, 2)}kgから${this._f(fl.to.value, 2)}kgで、ほぼ同じくらいでした。` : `${w}の最初と最後の記録は、ほぼ同じくらいでした。`;
+      }
+      return `${w}は${this._f(fl.from.value, 2)}kgから${this._f(fl.to.value, 2)}kgまで変化しました。`;
+    };
+    let weightSentence = null;
+    if (n === 1) weightSentence = isMonth ? `${w}の体重記録は${this._f(w0.first.value, 2)}kgでした。` : `${w}の体重記録は${this._f(w0.first.value, 2)}kgです。`;
+    else if (n >= 2 && isMonth && w0.lowCount) weightSentence = range;
+    else if (n >= 2 && s.softMode) weightSentence = w0.lowCount ? range : lastText;
+    else if (n >= 2) weightSentence = moved();
+    if (weightSentence) out.push(weightSentence);
 
     // たんぱく質（記録日のうち、現在の目標に届いた日）
     const p = s.protein;
@@ -499,16 +509,16 @@ const HighlightLogic = {
 
   // ============ 肯定メッセージ（週・月に1文。ルールで選ぶだけ。AIは使わない） ============
   // 記録そのもの・続けてきたことを肯定する文だけ。点数・成功失敗・「頑張ったから減った」のような努力との結び付けはしない。
-  // 選び方：記録が少ない（週<3日／月<8日）→ 記録できた日を肯定／体重が前の週（月は最初→最新）より減っていて、
+  // 選び方：記録が少ない（週<3日／月<8日）→ 記録できた日を肯定／期間内の最初→最後の実測が減っていて、
   // 記録が十分あり、維持・ガードレール中（softMode）でないとき → 積み重ねを肯定／それ以外で記録が十分 → 記録の積み重ねを肯定。
   // 同じ期間では同じ文になるよう、期間の開始日から文を選ぶ（乱数は使わない）
   AFFIRM_NONE: "記録できた日が増えると、ここで振り返りやすくなります。",
   AFFIRM_FEW: "記録できた日だけでも、からだを振り返る大事な手がかりです。",
 
-  // 「ほぼ同じ」（SAME_DIFF_KG 未満）は減ったことにしない（からだの発見の「ほぼ同じくらい」と食い違わせない。浮動小数の誤差も除く）
+  // 根拠は平均ではなく、期間内の最初の実測 → 最後の実測の差。「ほぼ同じ」（SAME_DIFF_KG 未満）は減ったことにしない
+  // （からだの発見の「ほぼ同じくらい」と食い違わせない。浮動小数の誤差も除く）
   affirmationDecreased(s) {
-    if (s.kind === "month") return s.firstLast.available && s.firstLast.diff <= -this.SAME_DIFF_KG;
-    return s.weight.diff != null && !s.weight.diffReferenceOnly && s.weight.diff <= -this.SAME_DIFF_KG;
+    return s.firstLast.available && this._r2(s.firstLast.diff) <= -this.SAME_DIFF_KG;
   },
 
   generateAffirmation(s) {

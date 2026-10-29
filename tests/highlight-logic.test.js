@@ -149,14 +149,14 @@ test("前の期間との差: 両方に平均があれば、記録が少なくて
   // 評価の文は書かない（比べる文・傾向の文を出さない）
   assert.ok(r.discoveries.every((t) => !t.includes("より") && !t.includes("低め") && !t.includes("高め")));
   assert.ok(r.discoveries.some((t) => t.includes("傾向はまだ読み取らず")));
-  assert.ok(r.discoveries.some((t) => t.includes("65.50〜66.50kg")), "範囲の数値は書く");
+  assert.ok(r.discoveries.some((t) => t.includes("65.50kgから66.50kgまで変化しました")), "週内の最初→最後の実測は書く（平均の差は使わない）");
   // 前の週に記録が無ければ、差そのものを出さない
   const s2 = baseState();
   s2.dailyRecords = [rec("2026-10-27", 65.5)];
   assert.equal(sum(s2, week(TODAY)).weight.diff, null);
 });
 
-test("週: 3日から比べる文を書く（2日では書かない）", () => {
+test("週: 3日から傾向の文を書く（2日では「傾向はまだ読み取らず」）", () => {
   const mk = (days) => {
     const s = baseState();
     s.dailyRecords = [rec("2026-10-19", 67), rec("2026-10-20", 67), rec("2026-10-21", 67)];
@@ -166,11 +166,14 @@ test("週: 3日から比べる文を書く（2日では書かない）", () => {
   const r2 = sum(mk(2), week(TODAY));
   assert.equal(r2.weight.lowCount, true);
   assert.ok(r2.discoveries.every((t) => !t.includes("前の週")));
+  assert.ok(r2.discoveries.every((t) => !t.includes("平均")));
   const r3 = sum(mk(3), week(TODAY));
   assert.equal(r3.weight.lowCount, false);
   assert.equal(r3.weight.lowCountNote, null);
   assert.equal(r3.weight.diffReferenceOnly, false);
-  assert.ok(r3.discoveries.some((t) => t.includes("前の週より1.00kg低めでした")), r3.discoveries.join("|"));
+  assert.ok(r3.discoveries.includes("今週の最初と最後の記録は、ほぼ同じくらいでした。"), r3.discoveries.join("|")); // 週内は 66→66→66。前の週との平均差(−1.00)は発見に使わない
+  assert.ok(r3.discoveries.every((t) => !t.includes("前の週")), "前の週との比べは発見に書かない");
+  assert.ok(r3.discoveries.every((t) => !t.includes("平均")), "平均を文の主語にしない");
   assert.ok(r3.discoveries.every((t) => !t.includes("読み取らず")));
 });
 
@@ -187,13 +190,16 @@ test("月: 8日から比べる文を書く（7日では書かない）。数字�
   near(r7.weight.diff, -1);
   assert.equal(r7.weight.diffReferenceOnly, true);
   assert.ok(r7.discoveries.every((t) => !t.includes("前の月")));
-  const r8 = sum(mk(8), month(TODAY));
+  const s8 = mk(8);
+  s8.dailyRecords[s8.dailyRecords.length - 1].weight = 66.5; // 10/8 の最新の実測
+  const r8 = sum(s8, month(TODAY));
   assert.equal(r8.weight.lowCount, false);
   assert.equal(r8.weight.diffReferenceOnly, false);
-  assert.ok(r8.discoveries.some((t) => t.includes("前の月より1.00kg低めでした")), r8.discoveries.join("|"));
+  assert.ok(r8.discoveries.includes("今月は67.00kgから66.50kgまで変化しました。"), r8.discoveries.join("|"));
+  assert.ok(r8.discoveries.every((t) => !t.includes("平均") && !t.includes("前の月")), "平均・前の月の平均を文の主語にしない");
 });
 
-test("平均がほぼ同じ（0.1kg未満の差）のときは「ほぼ同じくらい」と書く", () => {
+test("前の週と今週の平均がほぼ同じ（0.1kg未満の差）でも、発見文は週内の最初→最後で書く", () => {
   const s = baseState();
   s.dailyRecords = [66, 66, 66].map((w, i) => rec(`2026-10-${19 + i}`, w)).concat([66.05, 66.05, 66.05].map((w, i) => rec(`2026-10-${26 + i}`, w)));
   const r = sum(s, week(TODAY));
@@ -544,7 +550,7 @@ test("発見の文: 体重の文に原因を書かない／固定の型だけ（
   s.injections = [inj({ status: "administered", administeredAt: "2026-10-27", dose: 5 })];
   const r = sum(s, week(TODAY));
   assert.deepEqual(clone(r.discoveries).slice(0, 2), ["今週は3日、体重を記録できました。", "今週はまだ途中です。"]);
-  assert.equal(r.discoveries[2], "今週の体重は65.50〜66.50kgの範囲で推移しました。");
+  assert.equal(r.discoveries[2], "今週は66.00kgから66.50kgまで変化しました。"); // 週内の最初(10/26)→最後(10/28)。平均は書かない
   // 過去の週では「今週」「途中」と書かない
   const past = sum(s, week("2026-10-20"));
   assert.ok(past.discoveries.every((t) => !t.includes("今週") && !t.includes("途中")));
@@ -589,7 +595,7 @@ test("ガードレール（BMI21／20以下）・維持準備・維持モード�
   // 通常（BMI > 21）: 比べる文を書く
   const normal = sum(build(66, 65), week(TODAY));
   assert.equal(normal.softMode, false);
-  assert.ok(normal.discoveries.some((t) => t.includes("前の週より")));
+  assert.ok(normal.discoveries.some((t) => t.includes("最初と最後の記録")));
   assert.equal(normal.softNote, null);
   // BMI21以下
   const low21 = sum(build(56, 54), week(TODAY));
@@ -605,7 +611,8 @@ test("ガードレール（BMI21／20以下）・維持準備・維持モード�
     // 数値そのものは隠さない
     assert.equal(typeof r.weight.diff, "number");
     assert.equal(typeof r.weight.avg, "number");
-    assert.ok(text.includes("の平均は"), text);
+    assert.ok(text.includes("の最後の記録は"), text); // 維持・ガードレール中は、最後の実測だけを書く
+    assert.ok(!text.includes("平均") && !text.includes("変化") && !text.includes("最初と最後"), text);
   }
   // 過去の週を見ていても、いまの状態（直近の体重・モード）で判断する
   assert.equal(sum(build(66, 65, (s) => (s.goals.mode = "maintenance")), week("2026-10-19")).softMode, true);
@@ -655,15 +662,21 @@ test("肯定メッセージ: 記録が少ない（月8日未満・週3日未満�
   assert.equal(sum(affirmState([]), week(TODAY)).affirmation, H.AFFIRM_NONE);
 });
 
-test("肯定メッセージ: 週・前の週より平均が下がっていて記録が十分なときだけ「減った」系。参考程度（記録が少ない週が相手）は出さない", () => {
+test("肯定メッセージ: 週・期間内の最初→最後の実測が0.1kg以上下がっていて記録が十分なときだけ「減った」系。根拠は平均（前週比）ではない", () => {
+  const DEC = ["少しずつ積み重ねた変化が、数字にも表れています。", "今週の記録には、ここまで続けてきた変化が見えています。"];
+  const REC = ["今週もからだの変化をしっかり残せています。", "変化が見えるくらい、記録が積み上がりました。"];
   const dec = affirmState([["2026-10-19", 66.5], ["2026-10-20", 66.4], ["2026-10-21", 66.5], ["2026-10-26", 65.6], ["2026-10-27", 65.5], ["2026-10-28", 65.4]]);
   const rd = sum(dec, week(TODAY));
-  assert.ok(rd.weight.diff < 0 && rd.weight.diffReferenceOnly === false);
-  assert.ok(["少しずつ積み重ねた変化が、数字にも表れています。", "今週の記録には、ここまで続けてきた変化が見えています。"].includes(rd.affirmation), rd.affirmation);
-  const refOnly = affirmState([["2026-10-19", 66.5], ["2026-10-26", 65.6], ["2026-10-27", 65.5], ["2026-10-28", 65.4]]); // 前の週は1日だけ
-  const rr = sum(refOnly, week(TODAY));
-  assert.equal(rr.weight.diffReferenceOnly, true);
-  assert.ok(["今週もからだの変化をしっかり残せています。", "変化が見えるくらい、記録が積み上がりました。"].includes(rr.affirmation), rr.affirmation);
+  assert.ok(rd.firstLast.diff <= -H.SAME_DIFF_KG);
+  assert.ok(DEC.includes(rd.affirmation), rd.affirmation);
+  // 前の週が少なくても（比べない）、今週の中で下がっていれば同じ扱い
+  const prevFew = affirmState([["2026-10-19", 66.5], ["2026-10-26", 65.6], ["2026-10-27", 65.5], ["2026-10-28", 65.4]]);
+  assert.ok(DEC.includes(sum(prevFew, week(TODAY)).affirmation));
+  // 前の週よりずっと低くても、今週の中で上がっていれば「減った」系は出さない（前週比＝平均の差は根拠にしない）
+  const up = affirmState([["2026-10-19", 67.5], ["2026-10-20", 67.4], ["2026-10-21", 67.5], ["2026-10-26", 65.4], ["2026-10-27", 65.5], ["2026-10-28", 65.6]]);
+  const ru = sum(up, week(TODAY));
+  assert.ok(ru.weight.diff < -1 && ru.firstLast.diff > 0);
+  assert.ok(REC.includes(ru.affirmation), ru.affirmation);
 });
 
 test("肯定メッセージ: 維持モード・ガードレール中（softMode）は、体重が減っていても「減った」系を出さない", () => {
@@ -707,20 +720,71 @@ test("肯定メッセージ: 全パターンで禁止語・評価語・「もっ
   assert.ok(seen.size >= 4);
 });
 
-test("肯定メッセージ: 平均がほぼ同じ（0.1kg未満の差・浮動小数の誤差を含む）なら「減った」系を出さない（からだの発見の「ほぼ同じ」と食い違わない）", () => {
+test("肯定メッセージ: 最初→最後がほぼ同じ（0.1kg未満の差・浮動小数の誤差を含む）なら「減った」系を出さない（からだの発見の「ほぼ同じ」と食い違わない）", () => {
   const DEC = ["少しずつ積み重ねた変化が、数字にも表れています。", "今週の記録には、ここまで続けてきた変化が見えています。", "今月の記録には、ここまで続けてきた変化が見えています。"];
-  // 前の週・今週とも平均66.2（3日ずつ）。0.1+0.2 のような浮動小数の誤差が差に出る組み合わせ
-  const same = affirmState([["2026-10-19", 66.1], ["2026-10-20", 66.2], ["2026-10-21", 66.3], ["2026-10-26", 66.3], ["2026-10-27", 66.2], ["2026-10-28", 66.1]]);
+  // 前の週の平均 66.2、今週 66.2→66.3→66.2（最初→最後は同じ）。平均の差は0.03kg
+  const same = affirmState([["2026-10-19", 66.1], ["2026-10-20", 66.2], ["2026-10-21", 66.3], ["2026-10-26", 66.2], ["2026-10-27", 66.3], ["2026-10-28", 66.2]]);
   const w = sum(same, week(TODAY));
   assert.ok(Math.abs(w.weight.diff) < H.SAME_DIFF_KG);
   assert.ok(w.discoveries.some((t) => t.includes("ほぼ同じくらい")));
   assert.ok(!DEC.includes(w.affirmation), w.affirmation);
-  // 月：最初→最新が -0.03kg
+  // 月：最初→最後が -0.03kg
   const tiny = affirmState(OCT_DAYS_10.map((d, i) => [d, i === 9 ? 67.77 : 67.8]));
   const m = sum(tiny, month(TODAY));
   assert.ok(m.firstLast.diff < 0 && m.firstLast.diff > -H.SAME_DIFF_KG);
   assert.ok(!DEC.includes(m.affirmation), m.affirmation);
-  // ちょうど0.1kg以上減っていれば「減った」系になる（境界）
-  const edge = affirmState(OCT_DAYS_10.map((d, i) => [d, i === 9 ? 67.5 : 67.8]));
-  assert.ok(DEC.includes(sum(edge, month(TODAY)).affirmation));
+  // ちょうど0.1kg減（67.8→67.7 のような0.1kg刻み。浮動小数では 0.0999… になる）は「変化」。0.1kg未満（0.09kg）は「ほぼ同じ」
+  assert.ok(67.7 - 67.8 > -0.1, "前提：浮動小数ではしきい値の内側に見える");
+  const edge = affirmState(OCT_DAYS_10.map((d, i) => [d, i === 9 ? 67.7 : 67.8]));
+  const re = sum(edge, month(TODAY));
+  assert.ok(re.discoveries.includes("今月は67.80kgから67.70kgまで変化しました。"), re.discoveries.join("|"));
+  assert.ok(DEC.includes(re.affirmation), re.affirmation);
+  const under = affirmState(OCT_DAYS_10.map((d, i) => [d, i === 9 ? 67.71 : 67.8]));
+  const ru2 = sum(under, month(TODAY));
+  assert.ok(ru2.discoveries.includes("今月は67.80kgから67.71kgで、ほぼ同じくらいでした。"), ru2.discoveries.join("|"));
+  assert.ok(!DEC.includes(ru2.affirmation), ru2.affirmation);
+  // 週：今週の中で 66.3→66.2（ちょうど0.1kg減）
+  const wk = affirmState([["2026-10-26", 66.3], ["2026-10-27", 66.25], ["2026-10-28", 66.2]]);
+  assert.ok(DEC.includes(sum(wk, week(TODAY)).affirmation), sum(wk, week(TODAY)).affirmation);
+});
+
+test("発見の文: 平均を主語にしない（週・月・記録の多少・維持モードのどれでも）。月・週とも最初→最後の実測（記録が1日なら、その日の実測）", () => {
+  const states = [
+    affirmState([]),
+    affirmState([["2026-10-29", 65.4]]),
+    affirmState([["2026-10-02", 67.8], ["2026-10-20", 66.5], ["2026-10-29", 65.4]]),
+    affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26])),
+    affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26]), { maintenance: true }),
+    affirmState([["2026-10-19", 66.5], ["2026-10-20", 66.4], ["2026-10-21", 66.5], ["2026-10-26", 65.6], ["2026-10-27", 65.5], ["2026-10-28", 65.4]]),
+  ];
+  for (const st of states) {
+    for (const p of [month(TODAY), week(TODAY), month("2026-09-15"), week("2026-10-19")]) {
+      const r = sum(st, p);
+      for (const t of r.discoveries) assert.ok(!t.includes("平均"), t);
+      assert.ok(!r.affirmation.includes("平均"), r.affirmation);
+    }
+  }
+  const m = sum(states[3], month(TODAY));
+  assert.ok(m.discoveries.includes("今月は67.80kgから65.46kgまで変化しました。"), m.discoveries.join("|"));
+  const lowRange = sum(states[2], month(TODAY), "2026-11-10"); // 3日だけ（月8日未満）→ 傾向は読まず、範囲だけ（月を過ぎてから見る＝途中経過の文なし）
+  assert.ok(lowRange.discoveries.includes("この月の体重は65.40〜67.80kgの範囲で推移しました。"), lowRange.discoveries.join("|"));
+});
+
+test("週の発見文: 週内の最初→最後の実測（減少・増加・ちょうど0.1kg・0.1kg未満・1日）。前の週との平均の差は使わない", () => {
+  const wk = (rows) => sum(affirmState(rows), week(TODAY), "2026-11-10").discoveries; // 今週を過ぎてから見る（途中経過の文なし）
+  const three = (a, b, c) => [["2026-10-26", a], ["2026-10-27", b], ["2026-10-28", c]];
+  assert.ok(wk(three(65.6, 65.4, 65.2)).includes("この週は65.60kgから65.20kgまで変化しました。")); // 減少
+  assert.ok(wk(three(65.2, 65.4, 65.6)).includes("この週は65.20kgから65.60kgまで変化しました。")); // 増加
+  assert.ok(wk(three(66.3, 66.25, 66.2)).includes("この週は66.30kgから66.20kgまで変化しました。")); // ちょうど0.1kg（0.0999…でも変化）
+  assert.ok(wk(three(66.3, 66.4, 66.21)).includes("この週の最初と最後の記録は、ほぼ同じくらいでした。")); // 0.09kg
+  assert.ok(wk([["2026-10-28", 65.2]]).includes("この週の体重記録は65.20kgです。")); // 1日
+  // 前の週の平均が高くても、発見文は前の週に触れない
+  const withPrev = wk([["2026-10-19", 70], ["2026-10-20", 70], ["2026-10-21", 70], ...three(65.6, 65.4, 65.2)]);
+  assert.ok(withPrev.every((t) => !t.includes("前の週") && !t.includes("平均")), withPrev.join("|"));
+  // 記録が2日（週3日未満）でも最初→最後は書き、「傾向はまだ読み取らず」も残る
+  const two = wk([["2026-10-26", 65.6], ["2026-10-28", 65.2]]);
+  assert.ok(two.includes("この週は65.60kgから65.20kgまで変化しました。") && two.some((t) => t.includes("傾向はまだ読み取らず")), two.join("|"));
+  // 「最新」ではなく「最後」（過去の週・月でも自然）
+  const soft = sum(affirmState(OCT_DAYS_10.map((d, i) => [d, 67.8 - i * 0.26]), { maintenance: true }), month(TODAY), "2026-11-10").discoveries.join("");
+  assert.ok(soft.includes("最後の記録は") && !soft.includes("最新"), soft);
 });
