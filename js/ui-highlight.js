@@ -130,8 +130,10 @@ const HighlightUI = {
     };
   },
 
-  _stat(label, value, sub) {
-    return `<div class="hl-stat"><span class="hl-stat-label">${label}</span><span class="hl-stat-value">${value}</span>${sub ? `<span class="hl-stat-sub">${sub}</span>` : ""}</div>`;
+  // key=true は、そのカードで視線を集める主要値（1カード1〜2個）。増減の方向で色は変えない
+  _stat(label, value, sub, key) {
+    const emphasize = key && value !== HighlightLogic.NO_DATA; // 値がないときは強調しない
+    return `<div class="hl-stat${emphasize ? " hl-stat-key" : ""}"><span class="hl-stat-label">${label}</span><span class="hl-stat-value">${value}</span>${sub ? `<span class="hl-stat-sub">${sub}</span>` : ""}</div>`;
   },
 
   _dated(p, digits, unit) {
@@ -153,18 +155,25 @@ const HighlightUI = {
       if (w.diffReferenceOnly) diffSub += `<br />${L.LOW_COUNT_NOTE}`;
     }
     const stats = [
-      this._stat(`${isMonth ? "月" : "週"}の平均`, avgText, w.n ? `${w.n}日の平均` : ""),
-      this._stat(`${prevLabel}との差`, diffText, diffSub),
+      this._stat(`${isMonth ? "月" : "週"}の平均`, avgText, w.n ? `${w.n}日の平均` : "", true),
+      this._stat(`${prevLabel}との差`, diffText, diffSub, !isMonth && w.diff != null), // 前の週の記録がないとき（文言だけ）は強調しない
       this._stat("最小", this._dated(w.min, 2, " kg")),
       this._stat("最大", this._dated(w.max, 2, " kg")),
     ];
     if (isMonth) {
       const fl = s.firstLast;
+      // ％は、月内で最初に測った体重を基準にした変化率（HOMEの「kg変化＋％」と同じ Calc.changePct）。
+      // 最初と最後の実測が両方あるとき（fl.available）だけ出し、推定はしない
+      const flPct = fl.available ? Calc.changePct(fl.to.value, fl.from.value) : null;
+      const flValue = fl.available
+        ? `${this._signed(fl.diff, 2)} kg${flPct == null ? "" : `<small class="hl-pct">（${this._signed(flPct, 1).replace(/^-(0\.0+)$/, "$1")}%）</small>`}`
+        : L.NO_DATA;
       stats.push(
         this._stat(
           "最初と最後の差",
-          fl.available ? `${this._signed(fl.diff, 2)} kg` : L.NO_DATA,
-          fl.available ? `${L.mdw(fl.from.date)} ${this._f(fl.from.value, 2)} → ${L.mdw(fl.to.date)} ${this._f(fl.to.value, 2)}` : w.n === 1 ? "測定が1日だけのため、差は出していません" : ""
+          flValue,
+          fl.available ? `${L.mdw(fl.from.date)} ${this._f(fl.from.value, 2)} → ${L.mdw(fl.to.date)} ${this._f(fl.to.value, 2)}` : w.n === 1 ? "測定が1日だけのため、差は出していません" : "",
+          true
         )
       );
     }
@@ -186,7 +195,7 @@ const HighlightUI = {
     } else if (!ss.available) {
       since = `<p class="hl-line">${L.NO_DATA}</p>`;
     } else {
-      since = `<p class="hl-big">${this._signed(ss.changeKg, 2)} kg<small>（${this._signed(ss.changePct, 1)}%）</small></p>
+      since = `<p class="hl-big hl-key">${this._signed(ss.changeKg, 2)} kg<small>（${this._signed(ss.changePct, 1)}%）</small></p>
         <p class="hl-sub">開始体重（設定値）${this._f(ss.startWeight, 2)} kg から／この月で最後に測った ${L.mdw(ss.lastDate)} の ${this._f(ss.lastWeight, 2)} kg</p>`;
     }
     const g = s.goals;
@@ -194,7 +203,7 @@ const HighlightUI = {
       .map((r) => {
         if (r.status === "noData") return `<li class="hl-goal-row"><span class="hl-goal-name">${r.label}</span><span class="hl-goal-main">${L.NO_DATA}</span></li>`;
         if (r.status === "noTarget") return `<li class="hl-goal-row"><span class="hl-goal-name">${r.label}</span><span class="hl-goal-main">目標体重を計算できません</span></li>`;
-        const main = r.reached ? `目標体重（${this._f(r.targetKg, 2)} kg）以下で記録されました` : `まであと ${this._f(r.remainingKg, 1)} kg`;
+        const main = r.reached ? `目標体重（${this._f(r.targetKg, 2)} kg）以下で記録されました` : `まであと <span class="hl-key">${this._f(r.remainingKg, 1)} kg</span>`;
         const pct = r.progressPct == null ? "" : `<span class="hl-goal-pct">進み ${this._f(r.progressPct, 0)}%</span>`;
         return `<li class="hl-goal-row"><span class="hl-goal-name">${r.label}</span><span class="hl-goal-main">${main}</span>${pct}</li>`;
       })
@@ -244,7 +253,7 @@ const HighlightUI = {
     } else if (p.target == null) {
       body = `<p class="hl-big">記録日 ${p.recordedDays}日</p><p class="hl-sub">目標量が未設定のため、到達日数は出していません</p>`;
     } else {
-      body = `<p class="hl-big">記録日 ${p.recordedDays}日中、現在の目標${this._esc(p.target)}g到達 ${p.achievedDays}日</p>`;
+      body = `<p class="hl-big">記録日 ${p.recordedDays}日中、現在の目標${this._esc(p.target)}g<span class="hl-key">到達 ${p.achievedDays}日</span></p>`;
     }
     return `
       <section class="card">
