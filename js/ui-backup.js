@@ -18,13 +18,15 @@ const BackupUI = {
     if (!el) return;
     const last = Backup.getLastBackupAt();
     const pre = Backup.preRestoreInfo();
+    const reminder = Backup.backupReminder(state, last);
 
     el.innerHTML = `
       <section class="card backup-card">
         <p class="card-title">${UI.lineIcon("settings")}データのバックアップ</p>
         <p class="backup-note">
           記録はこの端末のブラウザ内だけに保存されています。機種変更やブラウザのデータ削除に備えて、
-          ときどきファイルへ書き出してください。<strong>外部ファイルへの書き出しが基本の保護です。</strong>
+          ときどきファイルへ書き出してください。<strong>外部ファイルへの書き出しが基本の保護です。</strong><br />
+          書き出し後は「ファイル」アプリで保存を確認してください。
         </p>
         <div class="backup-actions">
           <button class="btn-primary" id="backup-export-btn">バックアップを書き出す</button>
@@ -34,6 +36,15 @@ const BackupUI = {
         <p class="backup-meta" id="backup-status" role="status">${
           last ? `最後に書き出し操作をした日時：${escapeHtml(this._fmtTs(last))}` : "まだ書き出していません。"
         }</p>
+        ${
+          reminder.due
+            ? `<p class="backup-note backup-reminder" role="status">${
+                reminder.basis === "lastBackup"
+                  ? "最後の書き出し操作から7日以上たっています。外部バックアップを新しく作っておくと安心です。"
+                  : "利用開始から7日以上たっています。まだ外部バックアップを書き出していない場合は、作っておくと安心です。"
+              }</p>`
+            : ""
+        }
         <div class="backup-subactions">
           <button class="btn-text" id="backup-copy-btn">テキストでコピー</button>
           <button class="btn-text" id="backup-paste-btn">テキストを貼り付けて復元</button>
@@ -98,7 +109,7 @@ const BackupUI = {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
-        status.textContent = `書き出しました（${name}）。`;
+        status.textContent = `ダウンロードを開始しました（${name}）。保存先にファイルがあることを確認してください。`;
       } catch (_) {
         status.textContent = "書き出せませんでした。";
       }
@@ -111,6 +122,7 @@ const BackupUI = {
     corruptBackupFailed: "保存データを読み込めず、その退避もできなかったため、変更を保存しません（元のデータは消していません）。ブラウザの保存領域に空きを作ってから、再読み込みしてください。",
     staleTab: "他のタブでデータが更新されました。上書きを防ぐため、このタブでは変更を保存しません。再読み込みしてください。",
     saveFailed: "保存できませんでした（保存領域の不足など）。直近の変更が残っていない可能性があります。バックアップを書き出してください。",
+    restoreFailedUnknown: "復元処理のあと、保存状態を安全に確認できませんでした。上書きを防ぐため、この画面では変更を保存しません。外部バックアップを確認してください。",
     updateReady: "新しいバージョンが用意できました。作業を終えたら再読み込みすると、更新されます。",
   },
 
@@ -157,6 +169,14 @@ const BackupUI = {
     return ` ⚠ 注意：このデータは復元時の検証を通りません（${check.message}${detail ? " " + detail : ""}）。復元できない可能性があるため、内容を確認してください。`;
   },
 
+  _exportResultText(r) {
+    if (!r || !r.ok) return "";
+    if (r.method === "share") {
+      return `共有先への受け渡し操作が完了しました（${r.fileName}）。Body Gardenでは「ファイル」アプリ等への保存完了までは確認できません。保存先にファイルがあることを確認してください。`;
+    }
+    return `ダウンロードを開始しました（${r.fileName}）。Body Gardenでは端末への保存完了までは確認できません。保存先にファイルがあることを確認してください。`;
+  },
+
   async _export() {
     if (this._exporting) return; // 共有シート表示中の二重タップを防ぐ
     this._exporting = true;
@@ -168,8 +188,7 @@ const BackupUI = {
       if (r.cancelled) {
         status.textContent = "書き出しをキャンセルしました。";
       } else {
-        const how = r.method === "share" ? "共有シートからファイルに保存してください" : "ダウンロードしました";
-        status.textContent = `書き出しました（${r.fileName}）。${how}。最後に書き出し操作をした日時：${this._fmtTs(Backup.getLastBackupAt())}${this._selfCheckNote(r.selfCheck)}`;
+        status.textContent = `${this._exportResultText(r)} 最後に書き出し操作をした日時：${this._fmtTs(Backup.getLastBackupAt())}${this._selfCheckNote(r.selfCheck)}`;
       }
     } catch (e) {
       console.error("[BodyGarden] 書き出し失敗", e);
@@ -205,7 +224,6 @@ const BackupUI = {
     const ta = document.getElementById("backup-text-out");
     ta.focus();
     ta.select();
-    Backup.setLastBackupAt(new Date().toISOString());
     document.getElementById("backup-text-close").addEventListener("click", () => {
       UI.hideModal();
       this.render(UI.state);
@@ -282,6 +300,14 @@ const BackupUI = {
     }).join("") + `<tr><th scope="row">体組成のある日</th><td>${s.compositionDays && s.compositionDays.current !== null ? s.compositionDays.current : "—"} 日</td><td>${s.compositionDays ? s.compositionDays.incoming : 0} 日</td></tr>`;
     const warnings = result.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("");
     const exported = result.envelope.exportedAt ? this._fmtTs(result.envelope.exportedAt) : "不明";
+    const repCur = s.representative && s.representative.current;
+    const repInc = s.representative && s.representative.incoming;
+    const fmtDate = (x) => (x ? escapeHtml(x) : "—");
+    const fmtWeight = (x) => (x && x.lastWeight ? `${escapeHtml(x.lastWeight.date)} / ${Number(x.lastWeight.value).toFixed(2)} kg` : "—");
+    const fmtInjection = (x) => (x && x.lastInjection ? escapeHtml(x.lastInjection.date) : "—");
+    const fmtStock = (x) => (x && typeof x.stockRemaining === "number" ? `${x.stockRemaining} 本` : "—");
+    const freshness = s.freshness || { older: false, reasons: [] };
+    const staleReasons = (freshness.reasons || []).map((w) => `<li>${escapeHtml(w)}</li>`).join("");
     UI.showModal(`
       <p class="modal-title">現在のデータを置き換えます</p>
       <p class="modal-body">
@@ -293,22 +319,50 @@ const BackupUI = {
         <thead><tr><th></th><th>現在</th><th>バックアップ</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      ${warnings ? `<p class="modal-body">確認事項：</p><ul class="backup-list">${warnings}</ul>` : ""}
+      <p class="modal-body"><strong>代表値の比較</strong></p>
+      <table class="backup-compare">
+        <thead><tr><th></th><th>現在</th><th>バックアップ</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">最後の記録日</th><td>${fmtDate(repCur && repCur.latestRecordDate)}</td><td>${fmtDate(repInc && repInc.latestRecordDate)}</td></tr>
+          <tr><th scope="row">最後の体重</th><td>${fmtWeight(repCur)}</td><td>${fmtWeight(repInc)}</td></tr>
+          <tr><th scope="row">最後の投与日</th><td>${fmtInjection(repCur)}</td><td>${fmtInjection(repInc)}</td></tr>
+          <tr><th scope="row">注射の残本数</th><td>${fmtStock(repCur)}</td><td>${fmtStock(repInc)}</td></tr>
+        </tbody>
+      </table>
+      ${
+        freshness.older
+          ? `<div class="backup-pre" role="alert">
+               <p class="modal-body"><strong>⚠ 現在より古いデータへ戻る可能性があります。</strong></p>
+               ${staleReasons ? `<ul class="backup-list">${staleReasons}</ul>` : ""}
+               <label>
+                 <input type="checkbox" id="backup-stale-confirm" />
+                 現在より古い可能性のあるバックアップで、現在のデータが置き換わることを理解しました。
+               </label>
+             </div>`
+          : ""
+      }
+      ${warnings ?`<p class="modal-body">確認事項：</p><ul class="backup-list">${warnings}</ul>` : ""}
       <p class="modal-body">現在のデータは消え、このファイルの内容に置き換わります。<strong>元に戻すには、先に現在のデータを書き出しておくのが確実です。</strong>${
         Backup.hasPreRestore() ? "<br />このブラウザ内に残している、直前の復元前のデータは、今回の復元前のデータに置き換わります。" : ""
       }</p>
       <div class="modal-actions backup-confirm-actions">
         <button class="btn-text" id="backup-confirm-export">先に現在のデータを書き出す</button>
         <button class="btn-secondary" id="backup-confirm-cancel">キャンセル</button>
-        <button class="btn-primary" id="backup-confirm-ok">置き換えて復元</button>
+        <button class="btn-primary" id="backup-confirm-ok" ${freshness.older ? "disabled" : ""}>置き換えて復元</button>
       </div>`);
     document.getElementById("backup-confirm-cancel").addEventListener("click", () => UI.hideModal());
+    const staleCheck = document.getElementById("backup-stale-confirm");
+    if (staleCheck) {
+      staleCheck.addEventListener("change", () => {
+        document.getElementById("backup-confirm-ok").disabled = !staleCheck.checked;
+      });
+    }
     document.getElementById("backup-confirm-export").addEventListener("click", async () => {
       const btn = document.getElementById("backup-confirm-export");
       btn.disabled = true;
       try {
         const r = await Backup.exportFile(UI.state);
-        btn.textContent = r.ok ? "書き出しました" : "キャンセルしました";
+        btn.textContent = r.ok ? (r.method === "share" ? "共有操作が完了しました" : "ダウンロードを開始しました") : "キャンセルしました";
       } catch (_) {
         btn.textContent = "書き出しに失敗しました";
       }
@@ -324,13 +378,36 @@ const BackupUI = {
   _applyRestore(newState) {
     const r = Backup.applyRestore(newState);
     if (r.ok) return this._showReloadModal("復元しました", "バックアップの内容に置き換えました。画面を再読み込みします。");
+
+    // rescueAvailable は「書き込み失敗後の巻き戻し」の結果としてだけ返る（true/false）。
+    // 何も変更していない失敗（保存領域に触れない・新しい版が保存済み・退避できない）は undefined なので、どちらにも当たらない。
+    const rescue = !r.rolledBack && r.rescueAvailable === true;
+    const unknown = !r.rolledBack && r.rescueAvailable === false;
+    if (unknown) {
+      Storage.readOnly = true;
+      Storage.readOnlyReason = "restoreFailedUnknown";
+      this.showBanner("restoreFailedUnknown");
+    }
+
     UI.showModal(`
       <p class="modal-title">復元できませんでした</p>
       <p class="modal-body">${escapeHtml(r.message)}</p>
-      <div class="modal-actions"><button class="btn-primary" id="backup-restore-fail-close">閉じる</button></div>`);
+      ${rescue ? '<p class="modal-body backup-reassure">復元前の退避データを確認できています。下のボタンから救出できます。</p>' : ""}
+      <div class="modal-actions">
+        ${rescue ? '<button class="btn-secondary" id="backup-restore-rescue">復元前のデータに戻す</button>' : ""}
+        <button class="btn-primary" id="backup-restore-fail-close">閉じる</button>
+      </div>`);
+    const rescueBtn = document.getElementById("backup-restore-rescue");
+    if (rescueBtn) {
+      rescueBtn.addEventListener("click", () => {
+        const rr = Backup.rollbackToPreRestore();
+        if (rr.ok) return this._showReloadModal("戻しました", "退避していた復元前のデータに戻しました。画面を再読み込みします。");
+        this._showError({ message: rr.message, details: [] }, false);
+      });
+    }
     document.getElementById("backup-restore-fail-close").addEventListener("click", () => {
       UI.hideModal();
-      this.render(UI.state);
+      if (!unknown) this.render(UI.state);
     });
   },
 

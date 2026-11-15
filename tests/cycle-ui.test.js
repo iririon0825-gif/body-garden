@@ -238,7 +238,7 @@ test("charts.js: renderWeightChartを呼ぶと、CycleLogic.bands()の内容がC
 });
 
 test("charts.js: 月経の記録が無いときは、Charts.bandsが空配列になり、グラフ自体は変わらず描ける", () => {
-  const { env, Charts, calls } = setupCharts();
+  const { env, Charts, calls } = setupCharts("2026-10-15");
   const s = sampleState(env);
   s.cycleEntries = [];
   Charts.renderWeightChart("chart-weight-home", s, "30");

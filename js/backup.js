@@ -82,6 +82,35 @@ const Backup = {
     }
   },
 
+  // 最後の「書き出し操作」または利用開始から7日以上たっているか。
+  // 外部ファイルが実際にFiles/iCloud Drive等へ保存されたことまでは、ブラウザから確認できない。
+  backupReminder(state, lastBackupAt = this.getLastBackupAt(), now = new Date()) {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const nowMs = now instanceof Date && Number.isFinite(now.getTime()) ? now.getTime() : NaN;
+    if (!Number.isFinite(nowMs)) return { due: false, days: null, basis: null };
+
+    let basis = null;
+    let basisDate = null;
+    if (typeof lastBackupAt === "string" && lastBackupAt) {
+      const d = new Date(lastBackupAt);
+      if (Number.isFinite(d.getTime())) {
+        basis = "lastBackup";
+        basisDate = d;
+      }
+    }
+    if (!basisDate) {
+      const start = state && state.profile && state.profile.startDate;
+      if (this._isRealISODate(start)) {
+        const [y, m, d] = start.split("-").map(Number);
+        basis = "startDate";
+        basisDate = new Date(y, m - 1, d, 0, 0, 0, 0);
+      }
+    }
+    if (!basisDate || basisDate.getTime() > nowMs) return { due: false, days: null, basis };
+    const days = Math.floor((nowMs - basisDate.getTime()) / DAY_MS);
+    return { due: days >= 7, days, basis };
+  },
+
   // 書き出す内容を、復元時と同じ検証にかけてみる。通らないデータは、書き出せても復元できない。
   selfCheck(json) {
     const r = this.parse(json, null);
@@ -248,8 +277,93 @@ const Backup = {
     return (Array.isArray(state.dailyRecords) ? state.dailyRecords : []).filter((r) => r && typeof r.weight === "number");
   },
 
+  // 実際に記録された日付のうち最新の日。
+  // 未来の注射予定（scheduledAt / regularDate）は「記録」ではないため比較対象にしない。
+  // 投与済み注射は administeredAt のみを使う。
+  latestRecordDate(state) {
+    if (!state) return null;
+    const dates = [];
+    const push = (v) => {
+      if (this._isRealISODate(v)) dates.push(v);
+    };
+
+    for (const r of Array.isArray(state.dailyRecords) ? state.dailyRecords : []) push(r && r.date);
+    for (const r of Array.isArray(state.proteinEntries) ? state.proteinEntries : []) push(r && r.date);
+    for (const r of Array.isArray(state.conditionEntries) ? state.conditionEntries : []) push(r && r.date);
+    for (const r of Array.isArray(state.cycleEntries) ? state.cycleEntries : []) {
+      push(r && r.startDate);
+      push(r && r.endDate);
+    }
+    for (const r of Array.isArray(state.injections) ? state.injections : []) {
+      if (r && r.status === "administered") push(r.administeredAt);
+    }
+    dates.sort();
+    return dates.length ? dates[dates.length - 1] : null;
+  },
+
+  _lastWeight(state) {
+    const list = this._weightRecords(state).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const last = list[list.length - 1];
+    return last ? { date: last.date, value: last.weight } : null;
+  },
+
+  _lastAdministered(state) {
+    const list = (Array.isArray(state && state.injections) ? state.injections : [])
+      .filter((r) => r && r.status === "administered" && this._isRealISODate(r.administeredAt))
+      .slice()
+      .sort((a, b) => {
+        const d = String(a.administeredAt).localeCompare(String(b.administeredAt));
+        if (d !== 0) return d;
+        const t = String(a.administeredTime || "").localeCompare(String(b.administeredTime || ""));
+        if (t !== 0) return t;
+        return (Number.isFinite(a.id) ? a.id : 0) - (Number.isFinite(b.id) ? b.id : 0);
+      });
+    const last = list[list.length - 1];
+    return last ? { date: last.administeredAt } : null;
+  },
+
+  _stockRemaining(state) {
+    if (!state || !state.injectionStock || !Array.isArray(state.injections)) return null;
+    const initial = state.injectionStock.initialPens;
+    if (typeof initial !== "number" || !Number.isFinite(initial)) return null;
+    const used = state.injections.filter(
+      (r) => r && r.status === "administered" && r.stockCount !== "review" && r.stockCount !== "excluded"
+    ).length;
+    return initial - used;
+  },
+
+  _representative(state) {
+    if (!state) return null;
+    return {
+      latestRecordDate: this.latestRecordDate(state),
+      lastWeight: this._lastWeight(state),
+      lastInjection: this._lastAdministered(state),
+      stockRemaining: this._stockRemaining(state),
+    };
+  },
+
+  _freshness(incoming, current) {
+    const reasons = [];
+    if (!incoming || !current) return { older: false, reasons };
+    if (current.latestRecordDate && (!incoming.latestRecordDate || incoming.latestRecordDate < current.latestRecordDate)) {
+      reasons.push("バックアップの最後の記録日が、現在より前です。");
+    }
+    if (
+      typeof current.stockRemaining === "number" &&
+      typeof incoming.stockRemaining === "number" &&
+      incoming.stockRemaining > current.stockRemaining
+    ) {
+      reasons.push("バックアップの注射残本数が、現在より多くなっています。");
+    }
+    return { older: reasons.length > 0, reasons };
+  },
+
   summarize(candidate, currentState, fileVersion) {
     const dates = this._weightRecords(candidate).map((r) => r.date).sort();
+    const representative = {
+      incoming: this._representative(candidate),
+      current: currentState ? this._representative(currentState) : null,
+    };
     return {
       fileVersion,
       currentVersion: SCHEMA_VERSION,
@@ -259,6 +373,8 @@ const Backup = {
       weightDays: { incoming: this._weightRecords(candidate).length, current: currentState ? this._weightRecords(currentState).length : null },
       compositionDays: { incoming: this._compositionDays(candidate), current: currentState ? this._compositionDays(currentState) : null },
       range: dates.length > 0 ? { from: dates[0], to: dates[dates.length - 1] } : null,
+      representative,
+      freshness: this._freshness(representative.incoming, representative.current),
     };
   },
 
@@ -679,14 +795,33 @@ const Backup = {
       }
     } catch (e) {
       const rolledBack = this._restoreRaw(prevRaw);
-      this._restorePre(preSnap); // 退避も操作前の世代に戻す（失敗した復元で、以前の退避を失わない）
+      let preRestored = false;
+      let rescueAvailable = false;
+
+      if (rolledBack) {
+        preRestored = this._restorePre(preSnap);
+        rescueAvailable = prevRaw !== null && this._preMatches(prevRaw);
+      } else {
+        rescueAvailable = prevRaw !== null && this._preMatches(prevRaw);
+      }
+
+      let message;
+      if (rolledBack) {
+        message = preRestored
+          ? "復元の書き込みに失敗したため、元のデータに戻しました。退避データも操作前の状態に戻しています。"
+          : "復元の書き込みに失敗しましたが、元のデータには戻せました。退避データの世代は確認できないため、念のため外部バックアップを書き出してください。";
+      } else if (rescueAvailable) {
+        message = "復元の書き込みに失敗し、元のデータへ自動では戻せませんでした。ただし、復元前のデータが退避に残っていることを確認しました。「復元前のデータに戻す」から救出できます。";
+      } else {
+        message = "復元の書き込みに失敗し、元のデータへ自動では戻せませんでした。退避データも確認できないため、これ以上操作せず、先に書き出した外部バックアップから復元してください。";
+      }
       return {
         ok: false,
         code: "WRITE_FAILED",
-        message: rolledBack
-          ? "復元の書き込みに失敗したため、元のデータに戻しました。"
-          : "復元の書き込みに失敗し、元のデータへも自動では戻せませんでした。先に書き出したファイルから復元してください。",
+        message,
         rolledBack,
+        preRestored,
+        rescueAvailable,
         detail: String(e && e.message),
       };
     }
@@ -793,8 +928,18 @@ const Backup = {
     }
   },
 
+  _preMatches(raw) {
+    try {
+      return raw !== null && localStorage.getItem(this.PRE_RESTORE_KEY) === raw;
+    } catch (_) {
+      return false;
+    }
+  },
+
   _restoreRaw(raw) {
     try {
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (current === raw) return true;
       if (raw === null) localStorage.removeItem(STORAGE_KEY);
       else localStorage.setItem(STORAGE_KEY, raw);
       return localStorage.getItem(STORAGE_KEY) === raw;
