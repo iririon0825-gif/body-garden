@@ -278,6 +278,19 @@ const Storage = {
   // 起動後に保存できなくなった（容量不足・他タブが新しい版を保存など）ときに、画面側へ知らせるための連絡先。
   // 引数は "saveFailed" | "newerSchema"。ui-backup.js が帯の表示を結びつける。
   onProblem: null,
+  // localStorage への保存が成功した直後に呼ばれる連絡先（Google Sheets への自動バックアップの予約など）。
+  // ここでの失敗・遅延は、保存の結果（save() の戻り値）に一切影響させない。
+  onSaved: null,
+
+  _notifySaved() {
+    if (typeof this.onSaved === "function") {
+      try {
+        this.onSaved();
+      } catch (_) {
+        // 通知の失敗で保存処理を妨げない
+      }
+    }
+  },
 
   _notify(kind) {
     if (typeof this.onProblem === "function") {
@@ -413,12 +426,13 @@ const Storage = {
         }
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      return true;
     } catch (e) {
       console.error("[BodyGarden] localStorage書き込み失敗", e);
       this._notify("saveFailed");
       return false;
     }
+    this._notifySaved(); // 保存が済んでから、別系統の処理（Sheets送信の予約）へ知らせる。失敗しても true のまま
+    return true;
   },
 
   // date(YYYY-MM-DD)の記録を取得。なければ空レコードを返す（stateには追加しない）

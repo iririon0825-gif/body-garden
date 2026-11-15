@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.init(state);
     BackupUI.showReadOnlyBannerIfNeeded();
     BackupUI.watchStorage();
+    // Google Sheets への自動バックアップ。設定が無い・無効のときは何もしない（記録の保存・表示には影響しない）
+    if (typeof SheetsSync !== "undefined") SheetsSync.init();
     if (typeof ConditionUI !== "undefined") ConditionUI.watchDate();
   }
 

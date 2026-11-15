@@ -49,6 +49,7 @@ const BackupUI = {
           <button class="btn-text" id="backup-copy-btn">テキストでコピー</button>
           <button class="btn-text" id="backup-paste-btn">テキストを貼り付けて復元</button>
         </div>
+        ${typeof SheetsSyncUI !== "undefined" ? SheetsSyncUI.html() : ""}
         ${
           pre
             ? `<div class="backup-pre">
@@ -71,6 +72,7 @@ const BackupUI = {
     document.getElementById("backup-paste-btn").addEventListener("click", () => this._showPasteModal());
     const rb = document.getElementById("backup-rollback-btn");
     if (rb) rb.addEventListener("click", () => this._confirmRollback());
+    if (typeof SheetsSyncUI !== "undefined") SheetsSyncUI.bind();
   },
 
   // 保存データが新しい版のとき、通常画面の代わりに出す案内。保存データには一切触れない。
