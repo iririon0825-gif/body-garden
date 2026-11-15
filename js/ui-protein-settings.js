@@ -75,7 +75,9 @@ const ProteinSettingsUI = {
       <li class="master-row" data-product-id="${p.id}">
         <span class="master-row-main">
           ${escapeHtml(p.name)}${p.isDefault ? ' <span class="default-tag">既定</span>' : ""}
-          <span class="master-row-sub">${p.servingScoops}杯 = ${p.proteinPerServing}g</span>
+          <span class="master-row-sub">${p.servingScoops}杯 = ${p.proteinPerServing}g${
+            p.quickScoops != null ? `／いつもの量 ${escapeHtml(String(ProteinLogic.quickScoopsOf(p)))}スプーン` : ""
+          }</span>
         </span>
         <span class="master-row-actions">
           ${
@@ -125,6 +127,10 @@ const ProteinSettingsUI = {
         <label class="form-field">
           <span>規定量あたりProtein (g)</span>
           <input type="number" step="0.1" id="pf-proteinPerServing" value="${p.proteinPerServing ?? ""}" />
+        </label>
+        <label class="form-field">
+          <span>いつもの量・ワンタップ登録用（スプーン数・任意）</span>
+          <input type="number" step="0.1" id="pf-quickScoops" value="${escapeHtml(String(p.quickScoops ?? ""))}" placeholder="例: 3（コップ1杯）。空欄なら規定スプーン数" />
         </label>
       </div>
       <div class="modal-actions">
@@ -238,8 +244,14 @@ const ProteinSettingsUI = {
     const name = document.getElementById("pf-name").value.trim();
     const servingScoops = parseFloat(document.getElementById("pf-servingScoops").value);
     const proteinPerServing = parseFloat(document.getElementById("pf-proteinPerServing").value);
+    // いつもの量（任意）。空欄なら未設定（ワンタップ登録は規定スプーン数を使う）
+    const quickRaw = document.getElementById("pf-quickScoops").value.trim();
+    const quickScoops = quickRaw === "" ? null : parseFloat(quickRaw);
 
     if (!name) return this._fail(state, "商品名を入力してください。");
+    if (quickScoops !== null && !validateRange(quickScoops, VALIDATION_RANGES.wheyScoops)) {
+      return this._fail(state, `いつもの量は${VALIDATION_RANGES.wheyScoops.min}〜${VALIDATION_RANGES.wheyScoops.max}スプーンの範囲で入力してください（空欄なら規定スプーン数を使います）。`);
+    }
     if (!validateRange(servingScoops, VALIDATION_RANGES.productServingScoops)) {
       return this._fail(state, `規定スプーン数は${VALIDATION_RANGES.productServingScoops.min}〜${VALIDATION_RANGES.productServingScoops.max}の範囲で入力してください。`);
     }
@@ -255,6 +267,8 @@ const ProteinSettingsUI = {
       status: this._productForm.status || "active",
       isDefault: this._productForm.isDefault || false,
     };
+    // 任意フィールド。未設定のときは、キー自体を持たせない（既存の商品・保存形式・schemaVersion は変えない）
+    if (quickScoops !== null) product.quickScoops = quickScoops;
     Storage.upsertProteinProduct(state, product);
     this._productForm = null;
     this._error = null;

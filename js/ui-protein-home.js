@@ -3,6 +3,25 @@
 // 必要な操作だけをモーダルで開く軽量なUIにする。
 
 const ProteinHomeUI = {
+  // ---- ワンタップ登録の「誤連打」対策と「取り消す」 ----
+  // ・登録した直後だけ、「押したボタン」を短時間（QUICK_LOCK_MS）無効にする。ほかのボタン（ホエイのあとにオイコス、など）は
+  //   そのまま押せる。恒久的な重複禁止ではない（時間をあければ、同じものを同日に何度でも登録できる）。
+  // ・登録直後に、確認の表示（トースト）を出し、「取り消す」で「その直前に追加した1件」だけを削除する。
+  //   確認ダイアログは出さない（ワンタップ性を保つ）。
+  QUICK_LOCK_MS: 1200,
+  UNDO_VISIBLE_MS: 6000,
+  _locks: {}, // ボタンごとの無効化の期限（"whey" / "food:<id>" → 時刻）
+  _lockTimers: {},
+  _toastTimer: null,
+  _lastQuick: null, // { id, label, grams }。取り消せるのは、直前の1件だけ
+
+  _now() {
+    return Date.now();
+  },
+  _isLocked(key) {
+    return this._now() < (this._locks[key] || 0);
+  },
+
   // 食品サムネイル（仮配置）。未配置/読込失敗時は絵文字にフォールバックする
   _foodThumb(assetKey, fallbackEmoji) {
     const src = IMAGE_ASSETS[assetKey];
@@ -15,23 +34,36 @@ const ProteinHomeUI = {
     const target = state.profile.proteinTarget;
     const pct = target > 0 ? Math.min(100, (total / target) * 100) : 0;
     const foods = ProteinLogic.activeFoods(state);
+    const lockAttrFor = (key) => (this._isLocked(key) ? " disabled" : "");
+
+    // 既定のホエイ商品があれば、その「いつもの量」で1タップ登録するボタン。商品が未登録のときは、従来どおり案内を開く
+    const def = ProteinLogic.defaultProduct(state);
+    let wheyChip;
+    if (def) {
+      const scoops = ProteinLogic.quickScoopsOf(def);
+      const grams = Calc.round1((scoops / def.servingScoops) * def.proteinPerServing);
+      wheyChip = `<button class="chip-btn chip-quick" data-protein-action="whey-quick"${lockAttrFor("whey")}>${this._foodThumb("foodWhey", "🥛")} <span class="chip-name">いつものプロテイン<span class="chip-sub">${scoops}スプーン・${fmt(grams, 1)}g</span></span> <span class="chip-plus">＋1杯</span></button>`;
+    } else {
+      wheyChip = `<button class="chip-btn" data-protein-action="whey">${this._foodThumb("foodWhey", "🥛")} <span class="chip-name">ホエイ</span> <span class="chip-plus">＋</span></button>`;
+    }
 
     return `
       <p class="card-title">${UI.lineIcon("protein")}<span class="t-en">TODAY'S PROTEIN</span><span class="t-jp">今日のたんぱく質</span></p>
       <p class="protein-value">${fmt(total, 1)} / ${target} g</p>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="protein-chip-row">
-        <button class="chip-btn" data-protein-action="whey">${this._foodThumb("foodWhey", "🥛")} <span class="chip-name">ホエイ</span> <span class="chip-plus">＋</span></button>
+        ${wheyChip}
         ${foods
           .map(
             (f) =>
-              `<button class="chip-btn" data-protein-action="food-quick" data-food-id="${f.id}">${
+              `<button class="chip-btn" data-protein-action="food-quick" data-food-id="${f.id}"${lockAttrFor("food:" + f.id)}>${
                 f.id === "food-oikos" ? this._foodThumb("foodOikos", "") + " " : ""
               }<span class="chip-name">${escapeHtml(f.name)}</span> <span class="chip-plus">＋1</span></button>`
           )
           .join("")}
       </div>
       <div class="protein-link-row">
+        <button class="btn-text protein-link-whey" data-protein-action="whey">スプーン数を指定して追加</button>
         <button class="btn-text protein-link-custom" data-protein-action="food-custom">数量を指定して追加</button>
         <button class="btn-text protein-link-meal" data-protein-action="add-meal">${this._foodThumb("foodMeal", "")}<span class="chip-name">食事を追加</span></button>
         <button class="btn-text protein-link-today" data-protein-action="view-today">今日の記録を見る</button>
@@ -50,16 +82,97 @@ const ProteinHomeUI = {
   _handleAction(state, btn) {
     const action = btn.dataset.proteinAction;
     if (action === "whey") this._openWheyModal(state);
+    else if (action === "whey-quick") this._quickAddWhey(state);
     else if (action === "food-quick") this._quickAddFood(state, btn.dataset.foodId);
     else if (action === "food-custom") this._openFoodModal(state);
     else if (action === "add-meal") this._openMealModal(state);
     else if (action === "view-today") this._openTodayListModal(state);
   },
 
+  // ホエイ: 既定商品を「いつもの量」で1タップ登録（既存の createWheyEntry → upsertProteinEntry の経路）
+  _quickAddWhey(state) {
+    if (this._isLocked("whey")) return; // 登録直後の誤連打
+    const entry = ProteinLogic.createQuickWheyEntry(state, todayISODate());
+    if (!entry) {
+      this._openWheyModal(state); // 商品が未登録なら、案内を出す
+      return;
+    }
+    this._commitQuick(state, "whey", entry, "いつものプロテイン");
+  },
+
+  // 登録食品: 1単位を1タップ登録（従来どおり）
   _quickAddFood(state, foodId) {
+    const key = "food:" + foodId;
+    if (this._isLocked(key)) return; // 登録直後の誤連打
     const entry = ProteinLogic.createFoodEntry(state, todayISODate(), foodId, 1);
     if (!entry) return;
+    this._commitQuick(state, key, entry, entry.sourceName);
+  },
+
+  // 保存（既存の upsertProteinEntry → Storage.save。Google Sheets 自動バックアップも、この保存を起点に動く）
+  // → 押したボタンの短時間の無効化 → 再描画 → 確認の表示（取り消し付き）
+  _commitQuick(state, key, entry, label) {
     Storage.upsertProteinEntry(state, entry);
+    // id は「最大値＋1」で採番され、削除された id は、あとの記録に再利用される。取り消しで別の記録を消さないよう、
+    // id に加えて、作成時刻（createdAt）も控えて、両方が一致する記録だけを対象にする
+    this._lastQuick = { id: entry.id, createdAt: entry.createdAt, label, grams: entry.proteinTotal };
+    this._locks[key] = this._now() + this.QUICK_LOCK_MS;
+    if (this._lockTimers[key] !== undefined) clearTimeout(this._lockTimers[key]);
+    this._lockTimers[key] = setTimeout(() => this._unlock(key), this.QUICK_LOCK_MS);
+    UI.renderHome(); // 無効化した状態のボタンで描画される（_isLocked）
+    this._showUndoToast(state);
+  },
+
+  // 期限が来たボタンだけ、画面を作り直さずに有効へ戻す
+  _unlock(key) {
+    delete this._locks[key];
+    delete this._lockTimers[key];
+    document.querySelectorAll('[data-protein-action="whey-quick"], [data-protein-action="food-quick"]').forEach((b) => {
+      const k = b.dataset.proteinAction === "whey-quick" ? "whey" : "food:" + b.dataset.foodId;
+      if (k === key) b.disabled = false;
+    });
+  },
+
+  _toastEl() {
+    let el = document.getElementById("protein-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "protein-toast";
+      el.className = "protein-toast";
+      el.setAttribute("role", "status");
+      document.body.appendChild(el);
+    }
+    return el;
+  },
+
+  _showUndoToast(state) {
+    const last = this._lastQuick;
+    if (!last) return;
+    const el = this._toastEl();
+    el.innerHTML = `<span class="protein-toast-msg">✓ ${escapeHtml(last.label)} ${fmt(last.grams, 1)}gを追加しました</span><button class="protein-toast-undo" data-protein-undo>取り消す</button>`;
+    el.hidden = false;
+    el.querySelector("[data-protein-undo]").addEventListener("click", () => this._undoLast(state));
+    if (this._toastTimer !== null) clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => this._hideToast(), this.UNDO_VISIBLE_MS);
+  },
+
+  _hideToast() {
+    if (this._toastTimer !== null) {
+      clearTimeout(this._toastTimer);
+      this._toastTimer = null;
+    }
+    const el = document.getElementById("protein-toast");
+    if (el) el.hidden = true;
+    this._lastQuick = null; // 表示が消えたら、取り消しもできない（記録の削除は「今日の記録を見る」から）
+  },
+
+  // 直前に1タップ登録した1件だけを削除する（他の記録には触れない）
+  _undoLast(state) {
+    const last = this._lastQuick;
+    this._hideToast();
+    if (!last) return;
+    if (!state.proteinEntries.some((e) => e.id === last.id && e.createdAt === last.createdAt)) return;
+    Storage.deleteProteinEntry(state, last.id);
     UI.renderHome();
   },
 
@@ -295,7 +408,7 @@ const ProteinHomeUI = {
       </div>`);
     document.getElementById("edit-confirm-btn").addEventListener("click", () => {
       const scoops = parseFloat(document.getElementById("edit-scoops-input").value);
-      const range = VALIDATION_RANGES.wheyScoops;
+      const range = ProteinLogic.wheyEditRange(); // 規定量が10を超える商品の記録も、編集できる範囲
       const err = document.getElementById("edit-modal-error");
       if (Number.isNaN(scoops) || scoops < range.min || scoops > range.max) {
         err.textContent = `スプーン数は${range.min}〜${range.max}の範囲で入力してください。`;

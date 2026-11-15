@@ -869,6 +869,49 @@ nav.bottom-nav button.is-active .nav-icon-svg { color: var(--tab-ink); }
   gap: 4px 14px;
 }
 
+/* ワンタップ登録: 量の補助表示、登録直後の短時間の無効化、登録の確認と「取り消す」 */
+.chip-sub {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--text-lo);
+  margin-top: 1px;
+}
+.chip-btn:disabled { opacity: 0.55; cursor: default; }
+.protein-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 90; /* 下部ナビより上、モーダル（100）より下 */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content; /* left:50% の位置指定で、幅が画面の半分に縮まないように */
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 14px;
+  border-radius: 14px;
+  background: rgba(58, 53, 50, 0.94);
+  color: #fff;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  box-shadow: 0 6px 20px rgba(40, 30, 40, 0.28);
+}
+.protein-toast[hidden] { display: none; }
+.protein-toast-msg { min-width: 0; overflow-wrap: anywhere; }
+.protein-toast-undo {
+  flex: none;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: #ffd9e6;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .protein-entry-list { list-style: none; margin: 0 0 8px; padding: 0; }
 .protein-entry-row {
   display: flex;

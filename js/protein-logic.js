@@ -18,6 +18,36 @@ const ProteinLogic = {
     return active.find((p) => p.isDefault) || active[0] || null;
   },
 
+  // ワンタップ登録で使う「いつもの量」（スプーン数）。商品の任意フィールド quickScoops。
+  // 未設定・不正な値（数値でない・範囲外・Backup 復元などで壊れた値）のときは、規定量 servingScoops を使う。
+  // 商品の規定量（栄養表示上の量）とは別に持つ。既存データは書き換えない。
+  quickScoopsOf(product) {
+    if (!product) return null;
+    const q = product.quickScoops;
+    const range = VALIDATION_RANGES.wheyScoops;
+    if (typeof q === "number" && Number.isFinite(q) && q >= range.min && q <= range.max) return q;
+    return product.servingScoops;
+  },
+
+  // ホエイの「記録の編集」で許すスプーン数の範囲。
+  // 規定スプーン数（商品の登録は最大20）をそのまま1回分として登録できる（いつもの量が未設定のワンタップ登録）ので、
+  // 編集の上限もそれに合わせる。そうしないと、有効な商品で作れた記録を、あとから編集できなくなる。
+  // 新規の詳細入力（0.1〜10）と、いつもの量の設定範囲（0.1〜10）は、これまでどおり。
+  wheyEditRange() {
+    return {
+      min: VALIDATION_RANGES.wheyScoops.min,
+      max: Math.max(VALIDATION_RANGES.wheyScoops.max, VALIDATION_RANGES.productServingScoops.max),
+    };
+  },
+
+  // ワンタップ用: 既定のホエイ商品を、その商品の「いつもの量」で登録するエントリ（保存はしない）。
+  // 既存の createWheyEntry をそのまま使うので、snapshot・proteinTotal の作り方は詳細入力と同じ。
+  createQuickWheyEntry(state, date) {
+    const product = this.defaultProduct(state);
+    if (!product) return null;
+    return this.createWheyEntry(state, date, product.id, this.quickScoopsOf(product));
+  },
+
   createWheyEntry(state, date, productId, scoops) {
     const product = findById(state.proteinProducts, productId);
     if (!product) return null;
